@@ -1,0 +1,10 @@
+(function($){
+  Drupal.behaviors.page_row_scrollr = {}
+  Drupal.behaviors.page_row_scrollr.attach = function(context) {         
+    skrollr.init({
+            smoothScrolling: false,
+            mobileDeceleration: 1,
+      mobileCheck:function() { return false;}
+    });
+  }
+})( jQuery ); 

@@ -1,0 +1,1307 @@
+jQuery('document').ready(function($) {
+  var course_sea_li_count = 0;
+  var today = new Date();
+  aol = new AOL();
+  var dd = today.getDate();
+  var on_loading = 1;
+  var course_search_li_count = 0;
+  var mm = today.getMonth() + 1; //January is 0!
+  seeProgramCount();
+  var yyyy = today.getFullYear();
+  if (dd < 10) {
+    dd = '0' + dd;
+  } 
+  if (mm < 10) {
+    mm = '0' + mm;
+  } 
+  var today = yyyy + '-' + mm + '-' + dd;
+  var course_sdate =toShortFormat(today);
+  var default_ctype = '';
+  var current_gtag = '';
+  var current_acol = 0;
+  var tag_id_default = Drupal.settings.aol.default_tag_id;
+  $('[data-tag='+tag_id_default+']').prop('checked',true);
+ // $('.program-section').find('.form-checkbox:disabled').attr('checked', false);
+  $('.program-section').find( ".form-checkbox" ).each(function() {
+  	if($(this).is(':disabled')){
+  		$(this).prop('checked',false);
+  	}
+  });
+  $('.program-section').each(function() {
+  	var numberOfDisabled = $(this).find('input:checkbox:disabled').length;
+    var totalCheckboxes = $(this).find('input:checkbox').length;
+    if(totalCheckboxes == numberOfDisabled){
+    	$(this).find(".program-section-head .right-options").remove();
+    }
+  });
+  $('.course_ux_sdate').text(course_sdate);
+  $(".search_page .search-query").on('focus',function(){
+    var search_word = $(this).val();
+    $(this).parent().removeClass('active');
+    $(".distance-content").hide();
+    $('.search-query').removeClass('active');
+    if(search_word.length > 0 ){
+      $(this).siblings('.mega-menu').removeClass('active');
+      $(".course_autocomplete").addClass('active');
+      $(".course_autocomplete").show();
+      $('.search-query').addClass('active');
+    }else{
+      if (!($(window).width() < 767)) {
+        $(".show-program-checkbox").show().addClass('active');
+      }else{
+      	seeProgramCount();
+      	$('.show-options.spec-prog').addClass("active");
+      }
+      $(".course_autocomplete").removeClass('active');
+      $(this).siblings('.mega-menu').addClass('active');
+    }
+    
+  });
+  $(document).on('keypress', '.search-query', function(e){
+    if (e.which === 32 && !this.value.length){
+        e.preventDefault();
+        return false;
+    }
+  });
+
+  $(document).on('keyup', '.search-query', function(e){
+      e.preventDefault();
+      var search_word = $(this).val();
+      $(this).parent().removeClass('active');
+      $(".distance-content").hide();
+      $('.search-query').removeClass('active');
+      if(search_word.length > 0 ){
+        if (e.keyCode == 40) {
+          //keyup
+          var course_sea_count = $('.course_autocomplete').find('.course_search_autocomplete_li.active').attr('course_sea_count');
+          course_sea_count = parseInt(course_sea_count) +1;
+          if(course_sea_li_count < course_sea_count){
+            course_sea_count = 1;
+          }
+          $('.course_autocomplete').find('.course_search_autocomplete_li.active').removeClass('active');
+          $('.course_autocomplete').find('.course_sea_count_'+course_sea_count).addClass('active');
+        }else if(e.keyCode == 38){
+          //keydown
+          var course_sea_count = $('.course_autocomplete').find('.course_search_autocomplete_li.active').attr('course_sea_count');
+          course_sea_count = parseInt(course_sea_count) -1;
+          if(course_sea_count < 1){
+            course_sea_count = course_sea_li_count;
+          }
+          $('.course_autocomplete').find('.course_search_autocomplete_li.active').removeClass('active');
+          $('.course_autocomplete').find('.course_sea_count_'+course_sea_count).addClass('active');
+          var SearchInput = $('.search-query');
+          var strLength= SearchInput.val().length;
+          SearchInput.focus();
+          SearchInput[0].setSelectionRange(strLength, strLength);
+        }else if(e.keyCode == 13){
+          $(".search-query").val('');
+          $(document).find('.course_autocomplete').find('.course_search_autocomplete_li.active').trigger( "click" );
+        }else{
+          $(this).siblings('.mega-menu').removeClass('active');
+          $(".course_autocomplete").addClass('active');
+          $('.search-query').addClass('active');
+          coursetTypeshow(search_word);
+        }
+      }else{
+        if (!($(window).width() < 767)) {
+          $(".show-program-checkbox").show().addClass('active');
+        }else{
+        	seeProgramCount();
+        	$('.show-options.spec-prog').addClass("active");
+        }
+        $(".course_autocomplete").removeClass('active');
+        $(this).siblings('.mega-menu').addClass('active');
+      }
+  });
+  function coursetTypeshow(search_word){
+    var display_count = 7;
+    if ($(window).width() < 767) {
+      var display_count = 3;
+    }
+    var html_str ='';
+    html_str += '<ul>';
+    var course_display_count = 0;
+    var course_type_name_list = Drupal.settings.aol.course_type_name_list;
+    var parent_id_arr = [];
+    course_sea_li_count = 0;
+    var search_word_typo = '';
+    var search_word_low = search_word.toLowerCase();
+    var typo_result = Drupal.settings.aol.typo_result;
+    $.each( typo_result , function( key, value ){
+      if(key.indexOf(search_word_low) != -1){
+        search_word_typo = value;
+        return false;
+      }
+    });
+    for (var i = 0; i < course_type_name_list.length; ++i) {
+      if(typeof course_type_name_list[i].title != "undefined" && course_type_name_list[i].title != "" && course_type_name_list[i].title != 'NULL' && (course_type_name_list[i].title.toLowerCase().indexOf(search_word.toLowerCase()) !== -1  || ( search_word_typo.length > 0 &&  course_type_name_list[i].title.toLowerCase().indexOf(search_word_typo.toLowerCase()) !== -1) )&& ($.inArray(course_type_name_list[i].parent_id,parent_id_arr) < 0)){
+        parent_id_arr.push(course_type_name_list[i].parent_id);
+        course_sea_li_count = course_sea_li_count+1;
+        var title = course_type_name_list[i].display_title;
+        var li_active ='';
+        if(course_sea_li_count == 1){
+          li_active =' active';
+        }
+        title = title.replace(search_word,'<span class="matched">'+search_word+'</span>');
+        html_str += '<li class ="course_search_autocomplete_li '+li_active+' course_sea_count_'+course_sea_li_count+'" course_sea_count="'+course_sea_li_count+'">';
+          html_str += '<a href="javascript:;" ctype="'+course_type_name_list[i]._id+'" ><span>'+title+'<span></a>'
+        html_str += '</li>';
+        course_display_count++;
+      }
+      if(course_display_count == display_count){
+        break;
+      } 
+    }
+    if(course_display_count == 0){
+      html_str += '<li class = "not_found">'+Drupal.t("No results found")+'</li>';
+    }
+    html_str += '</ul>';
+    html_str += '<span class="search_program_close_btn"></span>';
+    $(".course_autocomplete").html(html_str);
+  }
+  $('.show-options a').on('click',function(e){
+    e.preventDefault();
+    $(this).find('.arrow').toggleClass('down-arrow');
+    $(this).siblings(".show-program-checkbox").slideToggle().toggleClass('active');
+  })
+  
+
+
+  $('.select-all').on('click',function(){
+    $(this).closest('.program-section').find( ".form-checkbox" ).each(function() {
+    	if(!$(this).is(':disabled')){
+    		$(this).prop('checked',true);
+    	}
+    });
+    $(this).hide();
+    $(this).siblings('.clear-all').show();
+  })
+  $('.clear-all').on('click',function(){
+  	$(this).closest('.program-section').find( ".form-checkbox" ).each(function() {
+    		$(this).prop('checked',false);	
+    });
+    $(this).hide();
+    $(this).siblings('.select-all').show();
+  })
+  $(document).on('change', '.program-section-body .custom_cb .form-checkbox', function(e) {
+    var numberOfChecked = $(this).closest('.program-section').find('input:checkbox:checked').length;
+    var numberOfDisabled = $(this).closest('.program-section').find('input:checkbox:disabled').length;
+    var totalCheckboxes = $(this).closest('.program-section').find('input:checkbox').length;
+    totalCheckboxes = totalCheckboxes - numberOfDisabled;
+    var numberNotChecked = totalCheckboxes - numberOfChecked;
+    if(numberOfChecked == totalCheckboxes){
+      $(this).closest('.program-section').find('.clear-all').show();
+      $(this).closest('.program-section').find('.select-all').hide();
+    }else if(numberOfChecked == 0){
+      $(this).closest('.program-section').find('.clear-all').hide();
+      $(this).closest('.program-section').find('.select-all').show();
+    }
+    seeProgramCount();
+  });
+  
+
+  $('.date-selector').on('click',function(){
+    $(this).find('.date-select').focus();
+    $(this).addClass("active");
+  });
+
+
+  if ($(window).width() < 767) {
+  	$('.search-query-button').on('click',function() {
+  		$('#edit-search-course-autocomplete-distance').change();
+  	});
+    $('.tab-link').on('click',function() {
+      var currentClick = $(this).closest('li').attr('data-attr');
+      $(this).closest('li').siblings().removeClass('active-tab');
+      $(this).closest('li').addClass('active-tab');
+      $('.tab-content').removeClass('active');
+      $(document).find("."+currentClick).addClass('active');
+      $('.program-section-head').first().find('h3 span.program-section-arrow').remove();
+      if(currentClick == 'spec-prog'){
+        $('.program-section-head').first().find('h3').append("<span class='program-section-arrow arrow-down'></span>"); 
+        $('.program-section-head').first().siblings('.program-section-body').show();
+      }
+    });
+    $('.program-section-head').on('click',function(e){
+      $(this).find('h3 span.program-section-arrow').remove();
+        if($(this).siblings('.program-section-body').css('display') == 'block'){
+          $(this).find('h3').append("<span class='program-section-arrow arrow-up'></span>"); 
+          $(this).siblings('.program-section-body').hide();
+        }else{
+          $(this).find('h3').append("<span class='program-section-arrow arrow-down'></span>"); 
+          $(this).siblings('.program-section-body').show();
+        }
+        e.preventDefault();
+        return false;
+    })
+  }
+
+  $(".program_selected_mobile").on('click',function(){
+    $('#edit-search-course-autocomplete-distance').change();
+    $(".mega-menu").removeClass("active");
+    $(".event_dist").removeClass('event_dist_active');
+  });
+  $(".distance-link a.a_dot").find('.miles-text').on('focus',function(){
+  	var miles_text_val = $(this).val();
+  	if(miles_text_val == ''){
+  		$(this).val($(this).parent().find('.miles-value').text());
+  	}
+  });
+  $(".distance-link a.a_dot").not('.miles-text').on('click',function(){
+	  if($('.miles-text').is(':focus')){
+		$(this).parent().removeClass('active');
+	    $(".distance-content").hide();
+	    $(".pgm_dist").removeClass('pgm_dist_active'); 
+	  }else{
+		$(this).parent().addClass('active');
+	    $(".distance-content").show();
+	    $(".pgm_dist").addClass('pgm_dist_active');
+	  }
+  });
+  $(".location-finder, .course-sortby-link").on('click',function(e){
+  	 var $target = $(e.target);
+    if(!$target.closest('.location-input').length && !($target.parent().hasClass('location-popup'))){
+    	$(this).addClass('active');
+    }
+    if($(this).hasClass('course-sortby-link')){
+    	$(this).find('.dot').removeClass("closed");
+    }else{
+    	setTimeout(function(){
+    		$("#edit-search-course-autocomplete-google").focus();
+    	},200);
+    }
+    $(this).parent().removeClass('active');
+    $(".distance-content").hide();
+    $(".pgm_dist").addClass('pgm_dist_active');
+      var container = $(this);
+      var containerClass = $(this).attr('class');
+      //$(containerClass).fadeIn();
+      if($(this).hasClass('location-finder')){
+    	 $("#edit-search-course-autocomplete-google").val('');
+      }
+  })
+  $(document).bind('click', function(e){
+    var $target = $(e.target);
+    
+    if(!$target.closest('div.search-ux-btn').length && !($target.parent().hasClass('mega-menu'))){
+      if($('.course-search-cont-main .search-ux-btn .mega-menu').hasClass('active')){
+        $('#edit-search-course-autocomplete-distance').change();
+      }
+      $('div.mega-menu').removeClass('active');
+    }
+    if(!$target.closest('div.search-ux-btn').length && !($target.parent().hasClass('course_autocomplete'))){
+      $('div.course_autocomplete').removeClass('active');
+      $(".course_search_ux_ctype").val('');
+    }
+    if(!$target.closest('.distance-link').length && !($target.parent().hasClass('distance-content'))){
+      $(".distance-content").hide();
+      $(".distance-link").removeClass('active');
+    }
+    if(!$target.closest('.location-finder').length && !($target.parent().hasClass('location-popup'))){
+      $(".location-finder").removeClass('active');
+    }
+    if(!$target.closest('.course-sortby-link').length && !($target.parent().hasClass('course-sortby-dd'))){
+      $(".course-sortby-link").removeClass('active');
+    }
+    if(!$target.closest('.distance-link').length && !($target.parent().hasClass('distance-content')) && !$target.closest('.location-finder').length && !($target.parent().hasClass('location-popup')) && !$target.closest('.date-selector').length && !$target.closest('.ui-datepicker-next').length && !$target.closest('.ui-datepicker-prev').length){
+    	$(".pgm_dist").removeClass('pgm_dist_active');
+    }
+  });
+  $('#course_ux_date_picker').datepicker({
+    dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+    minDate: 0,
+    maxDate:365,
+    dateFormat: 'yy-mm-dd',
+    beforeShow: function(input, inst) {
+      $('#ui-datepicker-div').addClass("course_search_ux_date_picker").css("postion","relative");
+      $(this).parent().removeClass('active');
+      $(".distance-content").hide();
+      $('.date-selector').addClass("active").parent('.date-field').addClass('active');
+      var datepicker_div = $( "#ui-datepicker-div" ).detach();
+      datepicker_div.appendTo( ".date-selector" );
+      $(".pgm_dist").addClass('pgm_dist_active');
+      
+    },
+    onSelect: function(dateText) {
+      var course_sdate =toShortFormat(this.value);
+      $('.course_ux_sdate').text(course_sdate);
+      $('.date-selector').removeClass("active").parent('.date-field').removeClass('active');
+      $('#edit-search-course-autocomplete-distance').change();
+    },
+    onClose : function(){
+      $('.date-selector').removeClass("active").parent('.date-field').removeClass('active');
+      $(".pgm_dist").removeClass('pgm_dist_active');
+    },
+  });
+  $(document).on('click', '.course_search_autocomplete_li', function(e) {
+    //$(".course_search_ux_ctype").val($(this).find('a').attr("ctype"));
+    var course_search_ctype = $(this).find('a').attr("ctype");
+    $('.program-section').find( ".form-checkbox" ).each(function() {
+    	$(this).prop('checked',false);
+    });
+    $('.program-section').find('.right-options').find('.clear-all').hide();
+    $('.program-section').find('.right-options').find('.select-all').show();
+    $('.program-section').find('.right-options-mobile').find('.clear-all').hide();
+    $('.program-section').find('.right-options-mobile').find('.select-all').show();
+    $('[value*="'+course_search_ctype+'"]').prop('checked',true);
+    $(".course_autocomplete").removeClass('active');
+    $(".search-query").val('');
+    $('#edit-search-course-autocomplete-distance').change();
+  });
+  $(document).on('click', '.search_program_close_btn', function(e) {
+    $('#edit-search-course-autocomplete-distance').change();
+    $(".mega-menu").removeClass("active");
+  });
+  $(document).on('click', '.toggleDiv-details-view',function(e) {
+    if($(this).find('span').hasClass('hide-view')){
+      $(this).parent().find('.show-details-view').hide();
+      $(this).html('<span class= "show-view">View Times, Address & Teacher  <span class="view-down-arrow"></span></span>  ');
+    }else{
+      $(this).parent().find('.show-details-view').show();
+      $(this).html('<span class= "hide-view">Hide Times, Address & Teacher  <span class="view-up-arrow"></span></span>');
+    }
+  });
+  $(document).on('click', '.distance-show-mobile .close-button',function(e) {
+    $(".distance-content").hide();
+    $(".distance-link").removeClass('active');
+    $(".pgm_dist").removeClass('pgm_dist_active');
+  });
+  $(document).on('click', '.location-show-mobile .close-button',function(e) {
+    $(".location-finder").removeClass('active');
+    $(".pgm_dist").removeClass('pgm_dist_active');
+  });
+  $(document).on('click', '.course-sortby-dd li',function(e) {
+	$(this).parent().find('li').removeClass('active');
+    $(this).addClass('active');
+    var sort_by = $(this).find('a').html();
+    $('.course-sortby-link').find('a.a_dot').html(sort_by);
+    $('#edit-search-course-autocomplete-distance').change();
+  });
+  $(document).on('click', '.date-show-mobile .close-button',function(e) {
+    $("#ui-datepicker-div").hide();
+    $(".date-show-mobile").hide();
+    $(".pgm_dist").removeClass('pgm_dist_active');
+  });
+  $(document).on('click', '.sortby-show-mobile .close-button',function(e) {
+    $(".course-sortby-link").removeClass('active');
+  });
+  function toShortFormat(dateformat ,format = 0){
+    var month_names =["Jan","Feb","Mar",
+      "Apr","May","Jun",
+      "Jul","Aug","Sep",
+      "Oct","Nov","Dec"];
+    var dateformat_arr = dateformat.split('-');
+    var day = dateformat_arr[2];
+    var month_index = dateformat_arr[1];
+    month_index = month_index.replace(/^0+/, '') -1;
+    if(format == 0){
+    	return ""+month_names[month_index]+"."+day;
+    }else{
+    	return ""+day+" "+month_names[month_index];
+    }
+  }
+ 
+
+  function seeProgramCount(){
+    var programCount = $('.program-section').find('input:checkbox:checked').length;
+    $('.program_selected_count').html(programCount);
+  }
+
+  $('.miles-text').on('keypress', function(e){
+	$(".distance-content").hide(); 
+    if (e.which != 8 && (e.which < 48 || e.which > 57) )
+    {
+        e.preventDefault();
+        return false;
+    }               
+  });
+  
+	Drupal.behaviors.search_courses_list = {}
+	function getCtypes(ctypes){
+  	if(ctypes != ""){
+      var ctype_ids = [];
+      $.each(ctypes, function( index, value ) {
+      	if(value != "")
+        	ctype_ids.push(value);
+      });
+    }
+    if(typeof ctype_ids != 'undefined' && ctype_ids != "")
+    	ctype_ids = ctype_ids.join(",");
+   	else
+    	ctype_ids = "";
+		return ctype_ids;
+  }
+	
+	var ajaxBandainForm = function($form, isExtendToLimit = 0) {
+	  var checkedValue=[];
+	  var allCourseTypes=[];
+	  var inputElements = document.getElementsByClassName('form-checkbox');
+	  for(var i=0; inputElements[i]; ++i){
+      // pushing all values as per id to the allcourseType array
+  		allCourseTypes.push(inputElements[i].value);
+      if(inputElements[i].checked){
+        checkedValue.push(inputElements[i].value);
+      }
+     // pushing only selected values
+	  }
+	  var auto_complete ='';
+	  if($('.search_course_autocomplete_google_obj').length > 0){
+	  	auto_complete=document.getElementsByName("search_course_autocomplete_google_obj")[0].value;
+	  }
+	  ctype ="";
+	  apiCtype="";
+	  cshort ="";
+	  if (checkedValue.length==0){
+	    ctype="";
+	    apiCtype=getCtypes(allCourseTypes);
+	  }else{
+	    ctype=getCtypes(checkedValue);
+	    apiCtype=getCtypes(checkedValue);
+	  }
+	  
+	  lat = $('input[name="search_course_autocomplete_google_lat"]').val();
+    lng = $('input[name="search_course_autocomplete_google_lng"]').val();
+    search = $('input[name="search_course_autocomplete_google"]').val();
+    if(search == "" && Drupal.settings.aol.country_name != "Global")
+  		search = Drupal.settings.aol.country_name;
+    distance = $('#edit-search-course-autocomplete-distance').val();
+    var place_type = $('input[name="search_course_autocomplete_google_place_type"]').val();
+    
+	  search_object={country:Drupal.settings.aol.country,ctype:apiCtype,language:Drupal.settings.aol.full_language, limit:10, lat:lat, lng:lng};
+	  /*if(isExtendToLimit){
+	  	search_object.extend_to_limit = 1;
+	  }*/
+	  if(Drupal.settings.aol.country == 'global'){
+	  	delete search_object.country;
+		}
+	  if(place_type =="country" && Drupal.settings.aol.country != 'global'){
+	  	search_object.type = "country";
+	  }else{
+	  	search_object.type = "search";
+	  }
+	  search_object.distance = distance;
+	  search_object.center_id = Drupal.settings.aol.center_id;
+	  if ($("#course_ux_date_picker").length == 1 && $("#course_ux_date_picker").val() != '') {
+	    var course_sdate = $("#course_ux_date_picker").val();
+	    var course_sdate_arr = course_sdate.split("-");
+	    search_object.start_date_from = course_sdate;
+	    search_object.start_date_to = $.format.date(new Date(parseInt(course_sdate_arr[0])+5,course_sdate_arr[1],course_sdate_arr[2]), "yyyy-MM-dd");
+	  }
+	  var combinedData={};
+	  
+	  if(lat != '' && lng != ''){
+	  	$('.search_courses_component .loader').show();
+			$('.search_courses_component .course-overlay').remove();
+	    $('.search_courses_component').prepend("<div class='course-overlay'></div>");
+	  	aol.course.search(search_object,formatCourse);
+	  }
+	}
+	function formatCourse(data){
+    var tt={rows:data.courses};
+     var res={};
+     res= {data:tt,type:"courses",total:data.total,distance:data.distance,search_distance:data.search_distance,limit:data.limit};
+
+     if(data.distance){
+ 	    var centerDistance = Math.round(data.distance);   // / 1.609
+ 	    if(centerDistance != $('.miles-value').text()){
+ 	       $('#edit-search-course-autocomplete-distance').val(centerDistance);
+ 	     $('.miles-value').text(centerDistance );
+ 	    }
+ 	  }
+     renderData(res);
+  }
+
+  function renderData(response){
+  	$('.location-finder').removeClass('active');
+  	if (typeof response == 'string') {
+      response = $.parseJSON(response);
+    }
+  	var viewHelpers = {
+        checkForDayNames : function(course){
+          return geoHelper.checkDayNames(course);
+        }
+     }
+     _.extend(response.data, viewHelpers);
+
+     var viewHelpers2 = {
+        checkDateDays : function(start, start_date, end , requestFor, type) {
+          return geoHelper.getCourseDateDays(start, start_date, end , requestFor, type);
+        }
+     }
+     _.extend(response.data, viewHelpers2);
+
+     var viewHelpers3 = {
+        getMonthNames : function(format_date, recur_event) {
+          return geoHelper.getMonthName(format_date, recur_event);
+        }
+     }
+     _.extend(response.data, viewHelpers3);
+
+     var viewHelpers4 = {
+        getCourseDay : function(start_date, end_date) {
+          return geoHelper.getCourseDay(start_date, end_date);
+        }
+     }
+     _.extend(response.data, viewHelpers4);
+
+     var viewHelpers5 = {
+        checkManyDay : function(start_date, end_date) {
+          return geoHelper.checkManyDay(start_date, end_date);
+        }
+     }
+     _.extend(response.data, viewHelpers5);
+     $('.search_courses_component .loader').hide();
+ 		 $('.search_courses_component .course-overlay').remove();
+     if(typeof response.data.rows != "undefined" && response.data.rows.length > 0){
+	     response.data.rows[0].ctype_stitle_arr = Drupal.settings.aol.ctype_stitle_arr;
+	     response.data.rows[0].prerequisite_arr = Drupal.settings.aol.prerequisite_arr;
+	     response.data.rows[0].show_year = Drupal.settings.aol.show_year;
+	     var html = _.template(search_courses_rows_template, response.data);
+	     $(".search_courses_component .search_course_result .search_course_tbody").html(html);
+	     $(".search_courses_component .search_course_noresult").hide();
+	     $(".search_courses_component .search_course_result #search_course_table").show();
+     }else{
+    	 var moreinfo_url = "search/course#distance=25&sSearch="+search+"&st=&lat="+lat+"&lng="+lng+"&ctype=&acol=0&c=in&cc=&d1=&d2=";
+    	 $('.noresult_moreinfo').find('.more-info').attr('href',moreinfo_url);
+    	 $(".search_courses_component .search_course_result #search_course_table").hide();
+    	 $(".search_courses_component .search_course_noresult").show();
+    	 
+     }
+  }
+	if($('.search_courses_component').length > 0){
+	  ajaxBandainForm($('.search_courses_component').closest('form'), 1);
+		if ($('input[name="search_course_autocomplete_google"]').length > 0) {
+	    geoHelper.initializeMap('input[name="search_course_autocomplete_google"]', ajaxBandainForm);
+		}
+		var eventsOff =  false;
+		$('#edit-search-course-autocomplete-distance').change(function(){
+		  if (false == eventsOff) {
+		    if ($(this).attr('id') == 'edit-search-course-autocomplete-distance' || $(this).attr('id') == 'edit-neighbour-countries-courses') {
+		      //we reset this only if location has changed
+		      $('input[name="address_changed"]').val(1);
+		    }
+		    ajaxBandainForm($(this).closest('form'));
+		  }
+		});
+		$('.distance-search-radius li a').click(function(e) {
+	    e.preventDefault();
+	    var miles_value = $(this).attr('miles-value');
+	    $(this).parent().parent().find("li a").removeClass("active");
+	    $(this).addClass("active");
+	    $(this).parent().parent().parent().parent().removeClass('active');
+	    if(miles_value == "any_distance"){
+	      $('.miles-value').hide();
+	      $('.search-slidebar').hide();
+	      $('.miles-text').val(parseInt($('.miles-value').text()));
+	      $('.miles-text').show();
+	      $(".pgm_dist").removeClass('pgm_dist_active');
+	    }else{
+	      $("#edit-search-course-autocomplete-distance").val($(this).attr('miles-value'));
+	      ajaxBandainForm($(this).closest('form'));
+	      $('.miles-value').show();
+	      $('.miles-text').hide();
+	    }
+	    $(".distance-content").hide();
+	    $('.distance-link').removeClass("active");
+	  });
+		$('.miles-text').change(function(){
+	    $('#edit-search-course-autocomplete-distance').val($('.miles-text').val());
+	    $('#edit-search-course-autocomplete-distance').change();
+	  });
+	
+		if(($(window).width() < 767)) {
+		  var modal = document.getElementById("popup-text");
+		  var btn = document.getElementById("popup-icon"); 
+		  var span = document.getElementsByClassName("close")[0];
+		  var close_model = document.getElementById("close-model");//close-model
+		  btn.onclick = function() {
+		    modal.style.display = "block";
+		  }
+		  jQuery(document).on('click','#close-model',function(){
+		    jQuery('#popup-text').addClass('hidden');
+		  });
+	
+		  jQuery(document).on('click','#popup-icon .icon',function(){
+		    jQuery('#popup-text').toggleClass('hidden')
+		  });
+		  window.onclick = function(event) {
+		    if (event.target == modal) {
+		      modal.style.display = "none";
+		    }
+		  }
+		}else{
+			$(document).on('mouseenter', '.search_courses_component #search_course_table tr', function(e) {
+		  	$(this).find('.detail-hide').fadeIn('400');
+		  });
+		}
+	}
+  $(document).on('mouseleave', '.search_courses_component #search_course_table tr', function(e) {
+  	$(this).find('.detail-hide').hide();
+  });
+
+	$('.search_courses_filter_date_lang').each(function() {
+		course_sdate =toShortFormat(today, 1);
+		$(this).find('.sc_course_ux_sdate').text(course_sdate);
+		var element_id = $(this).attr('element_id');
+		console.log("element_id",element_id);
+		$(".load_more_"+element_id).attr("offset",0);
+		getSearchCourses(element_id, is_mobile = 0);
+	});
+	
+	if($('.search_courses_filter_date_lang').length > 0){
+	  ajaxBandainForm($('.search_courses_filter_date_lang').closest('form'), 1);
+		if ($('input[name="search_course_autocomplete_google"]').length > 0) {
+	    geoHelper.initializeMap('input[name="search_course_autocomplete_google"]', getSearchCourses);
+		}
+	}
+	function getSearchCourses(element_id, is_mobile = 0){
+
+		if( jQuery.type( element_id ) != 'string'){
+			var element_id = $(".search_courses_filter_date_lang").first().attr('element_id');
+		}
+		$('.location-finder').removeClass('active');
+		var course_types = $("#course_type_nids_"+element_id).val();
+		var limit = $("#limit_"+element_id).val();
+		var current_limit =  limit;
+		var offset = 0;
+		/*if ($(window).width() < 767) {
+			offset = parseInt($(".load_more_"+element_id).attr("offset"));
+			current_limit = 4+offset;
+		}*/
+		if(offset == 0){
+			$(".loader").css('top','25%');
+		}
+		var extra_course_type_sel = $('[name="extra_course_type"]:checked').val();
+		var extra_course_types = $("#extra_course_type_"+element_id).val();
+		var show_extra_course_type_sel = $("#show_extra_course_type_sel_"+element_id).val();
+		if(show_extra_course_type_sel == 1  && extra_course_type_sel == 'extra'){
+			course_types = extra_course_types;
+    }
+		var show_profession_filter = $("#show_profession_filter_"+element_id).val();
+		if(show_profession_filter == 1 && $('.filter_date_time_lang_'+element_id+' .profession-container .profession-selct_text .profession-value').attr('value') != ''){
+			course_types = $('.filter_date_time_lang_'+element_id+' .profession-container .profession-selct_text .profession-value').attr('value');
+		}
+		api_params = {
+	      'type': "userlocation",
+				'language':Drupal.settings.aol.full_language,
+	      'ctype': course_types,
+	      'extend_to_limit' : 1,
+	      'lpe_id':element_id,
+	      'limit':current_limit,
+	      'is_mobile':is_mobile
+	  };
+
+		console.log("api_params",api_params);
+		var auto_complete ='';
+	  if($('.search_course_autocomplete_google_obj').length > 0){
+	  	auto_complete=document.getElementsByName("search_course_autocomplete_google_obj")[0].value;
+	  }
+	  
+	  lat = $('input[name="search_course_autocomplete_google_lat"]').val();
+    lng = $('input[name="search_course_autocomplete_google_lng"]').val();
+    search = $('input[name="search_course_autocomplete_google"]').val();
+    if(search == "" && Drupal.settings.aol.country_name != "Global")
+  		//search = Drupal.settings.aol.country_name;
+    var place_type = $('input[name="search_course_autocomplete_google_place_type"]').val();
+    
+
+	  if(place_type == "country" && Drupal.settings.aol.country != 'global'){
+	  	api_params.type = "country";
+	  }else if(auto_complete != '' ){
+	  	api_params.type = "search";
+	  	api_params.lat = lat;
+	  	api_params.lng = lng;
+	  	//api_params.extend_to_limit = 0;
+	  	api_params.distance = Drupal.settings.aol.default_course_distance;
+	  }
+    
+	  var show_random_courses = $("#show_random_courses_"+element_id).val();
+	  if(show_random_courses == 1){
+	  	api_params.randomize = 1
+	  }
+	  var teacher = $('.filter_date_time_lang_'+element_id+' .search-teacher-query').val();
+	  if($('.filter_date_time_lang_'+element_id+' .search-teacher-query').length > 0 && teacher != ''){
+	  	api_params.teacher = teacher;
+	  }
+	  
+		if(Drupal.settings.aol.country != 'global')
+			api_params.country = Drupal.settings.aol.country;
+		
+		if(typeof Drupal.settings.aol.is_ashram != "undefined" && Drupal.settings.aol.is_ashram !== null){
+			api_params.country = Drupal.settings.aol.is_ashram.country_code;
+			api_params.language = Drupal.settings.aol.is_ashram.language_map[Drupal.settings.aol.full_language];
+	  }
+		
+		if(typeof Drupal.settings.aol.dont_show_courses_afr_starts !== 'undefined' && Drupal.settings.aol.dont_show_courses_afr_starts == 0){
+	      var now = new Date();
+	      var hours = now.getHours();
+  	  	hours = (hours < 10) ? ("0"+hours) : hours;
+ 	      var minutes = now.getMinutes();
+ 	      minutes = (minutes < 10) ? ("0"+minutes) : minutes;
+	      api_params.start_time_from = hours+'.'+minutes;
+	      api_params.start_date_from = now.toISOString().substring(0, 10);//$.format.date(now, "yyyy-MM-dd");
+	      api_params.start_date_to = $.format.date(new Date(now.getFullYear()+5,now.getMonth(),now.getDay()), "yyyy-MM-dd");
+	  }
+		
+		if ($(".filter_date_time_lang_"+element_id+" .time-selector_text .time-value").length == 1 && $(".filter_date_time_lang_"+element_id+" .time-selector_text .time-value").attr('value') != 'select' && $(".filter_date_time_lang_"+element_id+" .time-selector_text .time-value").attr('value') != 'all') {
+	    var time_value = $(".filter_date_time_lang_"+element_id+" .time-selector_text .time-value").attr('value');
+	    var time_value_arr = time_value.split('-');
+	    api_params.start_time_from = time_value_arr[0];
+	    api_params.start_time_to = time_value_arr[1];
+	  }
+		
+		if ($(".filter_date_time_lang_"+element_id+" .language-selct_text .lang-value").length == 1 && $(".filter_date_time_lang_"+element_id+" .language-selct_text .lang-value").attr('value') != '' && $(".language-selct_text .lang-value").attr('value') != 'select' && $(".language-selct_text .lang-value").attr('value') != 'all') {
+	    var lang_value = $(".filter_date_time_lang_"+element_id+" .language-selct_text .lang-value").attr('value');
+	    api_params.course_language = lang_value;
+	  }else{
+	  	 var course_languages_arr = Drupal.settings.aol.course_languages_arr;
+	  	 if(Drupal.settings.aol.language != 'en' && $(".filter_date_time_lang_"+element_id+" .language-selct_text .lang-value").attr('value') == '' && typeof course_languages_arr[0][Drupal.settings.aol.language] != "undefined"){
+	  		 api_params.course_language = Drupal.settings.aol.language;
+	  		 $('.filter_date_time_lang_'+element_id+' .language-selct_text .lang-value').attr('value',Drupal.settings.aol.language);
+	  		 $('.filter_date_time_lang_'+element_id+' .language-selct_text .lang-value').text(course_languages_arr[0][Drupal.settings.aol.language]);
+	  		 $('.filter_date_time_lang_'+element_id+' .lang-slect').find('li').removeClass('active');
+	  		 $('.filter_date_time_lang_'+element_id+' .lang_value_'+Drupal.settings.aol.language).parent().addClass('active')
+	  	 }
+	  }
+		
+		if ($("#sc_lang_date_picker").length == 1 && $("#sc_lang_date_picker").val() != '') {
+	    var course_sdate = $("#sc_lang_date_picker").val();
+	    var course_sdate_arr = course_sdate.split("-");
+	    api_params.start_date_from = course_sdate;
+	    api_params.start_date_to = $.format.date(new Date(parseInt(course_sdate_arr[0])+5,course_sdate_arr[1],course_sdate_arr[2]), "yyyy-MM-dd");
+	  }
+		
+
+    //This date range will be selected in component's config date field
+    if ($("#date_range_start_from_"+element_id).val() != '') {
+      api_params.start_date_from = $("#date_range_start_from_"+element_id).val();
+    }
+
+    //This date range will be selected in component's config date field
+    if ($("#date_range_end_to_"+element_id).val() != '') {
+      api_params.start_date_to = $("#date_range_end_to_"+element_id).val()
+    }
+		if($("#userlocation_to_country_changed_"+element_id).val() == 1){
+			api_params.type = "country";
+		}
+		var teacher_uid = $("#teacher_uid_"+element_id).val();
+		if(teacher_uid != 0  ){
+			api_params.teacher_id = teacher_uid;
+			api_params.type = "country";
+			delete api_params.language;
+			api_params.ctype = "courses"
+			api_params.limit = 100;
+				
+			if ($(".filter_date_time_lang_"+element_id+" .ctype-selct_text .ctype-value").length == 1 && $(".filter_date_time_lang_"+element_id+" .ctype-selct_text .ctype-value").attr('value') != '' && $(".ctype-selct_text .ctype-value").attr('value') != 'select' && $(".ctype-selct_text .ctype-value").attr('value') != 'all') {
+		    var ctype_value = $(".filter_date_time_lang_"+element_id+" .ctype-selct_text .ctype-value").attr('value');
+		    api_params.ctype = ctype_value;
+		  }
+		}
+	  
+		$('.filter_date_time_lang_'+element_id+' .loader').show();
+		$('.filter_date_time_lang_'+element_id+' .course-overlay').remove();
+    $('.filter_date_time_lang_'+element_id).prepend("<div class='course-overlay'></div>");
+		aol.course.search(api_params,formatCourseFilter);
+	}
+	function formatCourseFilter(data){
+		var search_course_on_load = $('#search_course_on_load_'+data.api_params.lpe_id).val();
+		if(search_course_on_load == 0  && (typeof data.errors != 'undefined' || data.courses.length == 0)  && data.api_params.type == "userlocation"){
+  		var api_params = data.api_params;
+  		api_params.type = "country";
+  		$("#userlocation_to_country_changed_"+data.api_params.lpe_id).val(1);
+  		$(".location-finder-name").html(Drupal.settings.aol.country_name);
+  		aol.course.search(api_params,formatCourseFilter);
+  		return;
+  	}
+		
+		var tt={rows:data.courses};
+    var res={};
+    res= {data:tt,type:"courses",total:data.total,distance:data.distance,search_distance:data.search_distance,limit:data.limit, element_id:data.api_params.lpe_id , geo : data.geo};
+    renderDataFilter(res);
+	}
+	
+	function renderDataFilter(response){
+		element_id = response.element_id;
+  	if (typeof response == 'string') {
+      response = $.parseJSON(response);
+    }
+  	var viewHelpers = {
+        checkForDayNames : function(course){
+          return geoHelper.checkDayNames(course);
+        }
+     }
+     _.extend(response.data, viewHelpers);
+
+     var viewHelpers2 = {
+        checkDateDays : function(start, start_date, end , requestFor, type) {
+          return geoHelper.getCourseDateDays(start, start_date, end , requestFor, type);
+        }
+     }
+     _.extend(response.data, viewHelpers2);
+
+     var viewHelpers3 = {
+        getMonthNames : function(format_date, recur_event) {
+          return geoHelper.getMonthName(format_date, recur_event);
+        }
+     }
+     _.extend(response.data, viewHelpers3);
+
+     var viewHelpers4 = {
+        getCourseDay : function(start_date, end_date) {
+          return geoHelper.getCourseDay(start_date, end_date);
+        }
+     }
+     _.extend(response.data, viewHelpers4);
+
+     var viewHelpers5 = {
+        checkManyDay : function(start_date, end_date) {
+          return geoHelper.checkManyDay(start_date, end_date);
+        }
+     }
+     _.extend(response.data, viewHelpers5);
+     $('.filter_date_time_lang_'+element_id+' .loader').hide();
+ 		 $('.filter_date_time_lang_'+element_id+' .course-overlay').remove();
+ 		 var layout = $("#layout_"+element_id).val();
+ 		 var hide_learn_more =  $("#hide_learn_more_"+element_id).val();
+	 		var limit = $("#limit_"+element_id).val();
+			/*var current_limit =  limit;
+			var offset = 0;
+			if ($(window).width() < 767) {
+				offset = parseInt($(".load_more_"+element_id).attr("offset"));
+				current_limit = 4+offset;
+				$(".load_more_"+element_id).attr("offset",current_limit);
+				if(current_limit >= limit){
+					$(".load_more_"+element_id).removeClass('active');
+				}else{
+					$(".load_more_"+element_id).addClass('active');
+				}
+			}
+		 if(typeof response.data.rows != "undefined" && response.data.rows.length < 5){
+			 $(".load_more_"+element_id).removeClass('active');
+		 }*/
+	 	  var localion_data = $(".filter_date_time_lang_"+element_id+" .location-finder-name").html();
+	    $('.filter_date_time_lang_'+element_id+' .location-finder').removeClass('active');
+	  	if(localion_data == '' && 'undefined' != typeof response.geo){
+	  		var current_city = response.geo.city;
+	  		current_city = current_city.split(",")[0];
+	      var current_city_length = current_city.length;
+	      if(current_city_length > 22){
+	      	current_city = jQuery.trim(current_city).substring(0, 22)+ "..";
+	      }
+	  		$(".filter_date_time_lang_"+element_id+" .location-finder-name").html(current_city);
+	  	}
+	   var search_course_on_load = $('#search_course_on_load_'+element_id).val();
+	   $('#search_course_on_load_'+element_id).val(1);
+	   var teacher_uid = $("#teacher_uid_"+element_id).val();
+	   if((search_course_on_load == 0 && teacher_uid != 0)){
+	  	 var  ctype_data_arr = { 
+	  			 0 : {
+	  				 "tag" : 'happiness',
+	  				 "ctypes" : [337993, 338000, 847760]
+	  			 },
+			  	 1 : {
+						 "tag" : 'part_2',
+						 "ctypes" : [814381]
+					 },
+	  			 2 : {
+						 "tag" : 'sri_sri_yoga',
+						 "ctypes" : [337971, 337995, 337981]
+					 },
+					 3 : {
+						 "tag" : 'kids_and_teens',
+						 "ctypes" : [817070, 817068, 817069, 337970, 337992, 337975, 337978, 847862]
+					 },
+					 4 : {
+						 "tag" : 'others',
+						 "ctypes" : []
+					 }
+	  			 
+	  	 }
+	  	 if(typeof response.data.rows != "undefined" && response.data.rows.length > 0){
+	  		 var rows = response.data.rows;
+	  		 var ctype_arr = [];
+	  		 for (var key in ctype_data_arr) {
+	  			 tag = ctype_data_arr[key].tag
+	  			 ctype_arr[tag] =[];
+	  		 }
+	  		 rows.forEach((row, index) =>{
+           row_ctype  = parseInt(row.ctype);
+           is_found = 0;
+           for (var key in ctype_data_arr) {
+          	 ctypes = ctype_data_arr[key].ctypes;
+          	 tag = ctype_data_arr[key].tag          	 
+          	 if(ctypes.includes(row_ctype)){
+          		 ctype_arr[tag].push(row)
+          		 is_found =1;
+          	 }
+           }
+           if(is_found == 0){
+          	 ctype_arr['others'].push(row)
+           }
+	  		 });
+	  		 for (var key in ctype_data_arr) {
+	  			 tag = ctype_data_arr[key].tag
+	  			 row_length = ctype_arr[tag].length;
+	  			 rows = ctype_arr[tag];
+	  			 if(tag == 'happiness' && row_length == 0 ){
+						 $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_happiness").addClass("active");
+						 $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_happiness .search_course_result").hide();
+						 $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_happiness .program_details .program_count").html(" (0)");
+			    	 $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_happiness .search_course_noresult").show();
+					 }else if(row_length > 0){
+	  				 response.data.rows = rows;
+	  				 if(row_length > 5){
+	  					 data_rows =[]
+	  					 for (i = 0; i < row_length; i++) {
+	  						 data_rows.push(rows[i]);
+	  						 if (i === 4) { break; }
+	  					 }
+	  					 response.data.rows = data_rows;
+	  				 }	
+	  				 $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_"+tag+" .program_count").html(" ("+row_length+")");
+	  				 var show_course_fee = $("#show_course_fee_"+element_id).val()
+	  	    	 var fee_label = $("#fee_label_"+element_id).val()
+	  	    	 var hide_location_filter = $("#hide_location_filter_"+element_id).val()
+	  		     response.data.rows[0].ctype_stitle_arr = Drupal.settings.aol.ctype_stitle_arr;
+	  		     response.data.rows[0].prerequisite_arr = Drupal.settings.aol.prerequisite_arr;
+	  		     response.data.rows[0].show_year = Drupal.settings.aol.show_year;
+	  		     response.data.rows[0].layout = layout;
+	  		     response.data.rows[0].hide_learn_more = hide_learn_more;
+	  		     response.data.rows[0].course_languages_arr = Drupal.settings.aol.course_languages_arr;
+	  		     response.data.rows[0].show_course_fee = show_course_fee;
+	  		     response.data.rows[0].fee_label = fee_label;
+	  		     response.data.rows[0].hide_location_filter = hide_location_filter;
+	  		     response.data.rows[0].hide_teacher_phone_number = $("#hide_teacher_phone_number_"+element_id).val()
+	  	    	 response.data.rows[0].hide_teacher_email = $("#hide_teacher_email_"+element_id).val()
+	  		     var html = _.template(search_courses_rows_template, response.data);
+	  		     $(".filter_date_time_lang_"+element_id+" .course_types_list_wrap .teacher_course_types_"+tag).removeClass("hidden");
+	  		     $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_"+tag).addClass("active");
+	  		     $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_"+tag+" .search_course_result .search_course_tbody").html(html);
+	  		     $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_"+tag+" .search_course_noresult").hide();
+	  		     $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_"+tag+" .search_course_result .search_course_table").show();
+	  			 }
+	  		 }
+	  	 }else{
+	  		 $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_happiness").addClass("active");
+	  		 $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_happiness .search_course_result").hide();
+	  		 $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_happiness .program_details").hide();
+	  		 $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_happiness .search_course_noresult a").attr("href","/"+Drupal.settings.pathPrefix+"/search/course")
+	    	 $(".filter_date_time_lang_"+element_id+" .teacher_search_course_wrap .teacher_search_course_result_happiness .search_course_noresult").show();
+	  	 }
+	   }else{
+	     if(typeof response.data.rows != "undefined" && response.data.rows.length > 0){
+	    	 var search_course_on_load = $('#search_course_on_load_'+element_id).val();
+	    	 $('#search_course_on_load_'+element_id).val(1);
+	    	 var show_course_fee = $("#show_course_fee_"+element_id).val()
+	    	 var fee_label = $("#fee_label_"+element_id).val()
+	    	 var hide_location_filter = $("#hide_location_filter_"+element_id).val()
+	    	 response.data.rows[0].hide_teacher_phone_number = $("#hide_teacher_phone_number_"+element_id).val()
+	    	 response.data.rows[0].hide_teacher_email = $("#hide_teacher_email_"+element_id).val()
+		     response.data.rows[0].ctype_stitle_arr = Drupal.settings.aol.ctype_stitle_arr;
+		     response.data.rows[0].prerequisite_arr = Drupal.settings.aol.prerequisite_arr;
+		     response.data.rows[0].show_year = Drupal.settings.aol.show_year;
+		     response.data.rows[0].layout = layout;
+		     response.data.rows[0].hide_learn_more = hide_learn_more;
+		     response.data.rows[0].course_languages_arr = Drupal.settings.aol.course_languages_arr;
+		     response.data.rows[0].show_course_fee = show_course_fee;
+		     response.data.rows[0].fee_label = fee_label;
+		     response.data.rows[0].hide_location_filter = hide_location_filter;
+		     var html = _.template(search_courses_rows_template, response.data);
+		     $(".filter_date_time_lang_"+element_id+" .search_course_result .search_course_tbody").html(html);
+		     $(".filter_date_time_lang_"+element_id+" .search_course_noresult").hide();
+		     $(".filter_date_time_lang_"+element_id+" .search_course_result .search_course_table").show();
+	     }else{
+	    	 $(".filter_date_time_lang_"+element_id+" .search_course_result .search_course_table").hide();
+	    	 $(".filter_date_time_lang_"+element_id+" .search_course_noresult").show();
+	     }
+	   }
+     if(on_loading == 1){
+    	 var pageURL = $(location).attr("href").split("#");
+    	 if($("#"+pageURL[1]) > 0){
+    		 $('html, body').animate({ scrollTop: $("#"+pageURL[1]).offset().top }, 1)
+    	 }
+       on_loading = 0;
+     }
+  }
+	minDate = 0
+	$('.sc_lang_date_picker').datepicker({
+    dayNamesMin: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+    minDate: minDate,
+    maxDate:365,
+    dateFormat: 'yy-mm-dd',
+    beforeShow: function(input, inst) {
+      $('#ui-datepicker-div').addClass("course_search_ux_date_picker").css("postion","relative");
+      $(this).parent().removeClass('active');
+      $('.date-selector').addClass("active").parent('.date-field').addClass('active');
+      var datepicker_div = $( "#ui-datepicker-div" ).detach();
+      datepicker_div.appendTo( ".date-selector" );
+      
+    },
+    onSelect: function(dateText) {
+    	var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id')
+      var course_sdate =toShortFormat(this.value, 1);
+      $('.filter_date_time_lang_'+element_id+' .sc_course_ux_sdate').text(course_sdate);
+      $('.filter_date_time_lang_'+element_id+' .date-selector').removeClass("active").parent('.date-field').removeClass('active');
+      $(".load_more_"+element_id).attr("offset",0);
+      getSearchCourses(element_id, is_mobile = 0);
+    },
+    onClose : function(){
+      $('.date-selector').removeClass("active").parent('.date-field').removeClass('active');
+    },
+  });
+	
+	$(document).on('click', '.course_types_list_wrap .teacher_course_types .course_badge', function(e){
+		var tag = $(this).attr('tag');
+		var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id');
+		$(".filter_date_time_lang_"+element_id+" .teacher_course_types").removeClass('active');
+		$(this).parent().addClass('active');
+		 var newposition = $('.filter_date_time_lang_'+element_id+' .teacher_search_course_wrap .teacher_search_course_result_'+tag).offset()
+		 jQuery('html, body').stop().animate({
+       scrollTop: newposition.top 
+   }, 1000);
+		
+	});
+	
+	$(document).on('click', '.profession-container .profession-selct_text', function(e){
+		$(this).parent().find(".profession-selct-contanier").addClass('active');
+	});
+	
+	$(document).on('click', '.profession-container .profession-selct-contanier .profession_value', function(e){
+		$(this).parents('.profession-slect').find('li').removeClass('active');
+		$(this).parent().addClass('active');
+		var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id');
+		$(".filter_date_time_lang_"+element_id+" .profession-selct-contanier").removeClass('active');
+		e.preventDefault();
+    var profession_ctypes = $(this).attr('profession_ctypes');
+    var profession_text = $(this).text();
+    if(profession_ctypes == 'all'){
+    	profession_text  = 'All';
+    }
+    $('.filter_date_time_lang_'+element_id+' .profession-container .profession-selct_text .profession-value').attr('value',profession_ctypes);
+    $('.filter_date_time_lang_'+element_id+' .profession-container .profession-selct_text .profession-value').text(profession_text);
+    getSearchCourses(element_id, is_mobile = 0);
+	});
+	
+	$(document).on('click', '.ctype-container .ctype-selct_text', function(e){
+		$(this).parent().find(".ctype-selct-contanier").addClass('active');
+	});
+	
+	$(document).on('click', '.ctype-container .ctype-selct-contanier .ctype_value', function(e){
+		$(this).parents('.ctype-slect').find('li').removeClass('active');
+		$(this).parent().addClass('active');
+		var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id');
+		$(".filter_date_time_lang_"+element_id+" .ctype-selct-contanier").removeClass('active');
+		e.preventDefault();
+    var ctype_value = $(this).attr('ctype_value');
+    var ctype_code = $(this).attr('ctype_code');
+    if(ctype_value == 'all'){
+    	ctype_value = 'All';
+    	ctype_code = 'select';
+    }
+    var ctype_value_length = ctype_value.length;
+    if(ctype_value_length > 26){
+    	ctype_value = jQuery.trim(ctype_value).substring(0, 24)+ "..";
+    }
+    $('.filter_date_time_lang_'+element_id+' .ctype-container .ctype-selct_text .ctype-value').attr('value',ctype_code);
+    $('.filter_date_time_lang_'+element_id+' .ctype-container .ctype-selct_text .ctype-value').text(ctype_value);
+    getSearchCourses(element_id, is_mobile = 0);
+	});
+	
+	
+	$(document).on('click', '.lang-container .language-selct_text', function(e){
+		$(this).parent().find(".language-selct-contanier").addClass('active');
+	});
+	
+	$(document).on('click', '.lang-container .language-selct-contanier .lang_value', function(e){
+		$(this).parents('.lang-slect').find('li').removeClass('active');
+		$(this).parent().addClass('active');
+		var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id');
+		$(".filter_date_time_lang_"+element_id+" .language-selct-contanier").removeClass('active');
+		e.preventDefault();
+    var lang_value = $(this).attr('lang_value');
+    var lang_code = $(this).attr('lang_code');
+    if(lang_value == 'all'){
+    	lang_value = 'All';
+    	lang_code = 'select';
+    }
+    $('.filter_date_time_lang_'+element_id+' .lang-container .language-selct_text .lang-value').attr('value',lang_code);
+    $('.filter_date_time_lang_'+element_id+' .lang-container .language-selct_text .lang-value').text(lang_value);
+    getSearchCourses(element_id, is_mobile = 0);
+	});
+	
+	$('input[type=radio][name=lang-container-input]').change(function() {
+		var value = $("input[name='lang-container-input']:checked").val();
+		if(value != 'other'){
+			var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id')
+			$('.filter_date_time_lang_'+element_id+' .lang_container_other .lang_label .bold-text').text(Drupal.t("Other"));
+			$(".filter_date_time_lang_"+element_id+" .lang-container-mobile .lang-slect").find('li').removeClass('active');
+			$(".filter_date_time_lang_"+element_id+" .language-selct-contanier-mobile").removeClass("active");
+			$('.filter_date_time_lang_'+element_id+' .lang-container .language-selct_text .lang-value').attr('value',value);
+			getSearchCourses(element_id, is_mobile = 0);
+		}
+	});
+	$(document).on('click', '.lang-container-mobile .lang_container_other', function(e){
+		e.stopImmediatePropagation();
+		var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id')
+		$(".filter_date_time_lang_"+element_id+" .language-selct-contanier-mobile").removeClass("active");
+		$(".filter_date_time_lang_"+element_id+" .language-selct-contanier-mobile").addClass("active");
+	});
+	$(document).on('click', '.lang-container-mobile .language-selct-contanier-mobile .lang_value', function(e){
+		$(this).parents('.lang-slect').find('li').removeClass('active');
+		$(this).parent().addClass('active');
+		$(".filter_date_time_lang_"+element_id+" .language-selct-contanier-mobile").removeClass('active');
+		var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id');
+		e.preventDefault();
+    var lang_code = $(this).attr('lang_code');
+    var lang_value = $(this).attr('lang_value');
+    $('.filter_date_time_lang_'+element_id+'  .lang_container_other .lang_label .bold-text').text(lang_value);
+    $('.filter_date_time_lang_'+element_id+' .lang-container .language-selct_text .lang-value').attr('value',lang_code);
+    getSearchCourses(element_id, is_mobile = 0);
+	});
+	
+	$('input[type=radio][name=lang-container-radio]').change(function() {
+		var value = $("input[name='lang-container-radio']:checked").val();
+		if(value != 'other'){
+			var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id')
+			$('.filter_date_time_lang_'+element_id+' .lang_container_other .lang_label .bold-text').text(Drupal.t("Other"));
+			$(".filter_date_time_lang_"+element_id+" .radio-lang-container .lang-slect").find('li').removeClass('active');
+			$(".filter_date_time_lang_"+element_id+" .language-selct-contanier-radio").removeClass("active");
+			$('.filter_date_time_lang_'+element_id+' .lang-container .language-selct_text .lang-value').attr('value',value);
+			getSearchCourses(element_id, is_mobile = 0);
+		}
+	});
+	$(document).on('click', '.radio-lang-container .lang_container_other', function(e){
+		e.stopImmediatePropagation();
+		var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id')
+		$(".filter_date_time_lang_"+element_id+" .language-selct-contanier-radio").removeClass("active");
+		$(".filter_date_time_lang_"+element_id+" .language-selct-contanier-radio").addClass("active");
+	});
+	$(document).on('click', '.radio-lang-container .language-selct-contanier-radio .lang_value', function(e){
+		$(this).parents('.lang-slect').find('li').removeClass('active');
+		$(this).parent().addClass('active');
+		var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id');
+		$(".filter_date_time_lang_"+element_id+" .language-selct-contanier-radio").removeClass('active');
+		e.preventDefault();
+    var lang_code = $(this).attr('lang_code');
+    var lang_value = $(this).attr('lang_value');
+    $('.filter_date_time_lang_'+element_id+' .lang_container_other .lang_label .bold-text').text(lang_value);
+    $('.filter_date_time_lang_'+element_id+' .lang-container .language-selct_text .lang-value').attr('value',lang_code);
+    getSearchCourses(element_id, is_mobile = 0);
+	});
+	
+	$(document).on('change', '.extra_course_type', function(e){
+		var element_id  = $(this).attr('element_id');
+		$(".load_more_"+element_id).attr("offset",0);
+    $(".loader").css('top','25%');
+    getSearchCourses(element_id, is_mobile = 0);
+	})
+	
+	$(document).on('keyup', '.search-teacher-query', function(e){
+		var teacher = $(this).val();
+       var  taxo_name_arr = new Array();
+		var teachername = teachersearchdata.teacher_name;
+        $('.teacher_filter_name').removeClass('hidden');
+            jQuery.each(teachername, function(index, item) {
+              if(item.toLowerCase().indexOf(teacher.toLowerCase()) >= 0 && item.length > 0){
+                  taxo_name_arr[index] = item+'-'+index;
+              }
+            });
+        taxo_name_arr = taxo_name_arr.filter(item => item);
+        filtered_teacher = taxo_name_arr.slice(0, 11);
+        $('.teacher_filter_name').empty();
+        if(teacher != ""){
+            $('.teacher_filter_name ').append('<ul></ul>');
+            filtered_teacher.forEach((item,index) => {
+                item = item.split('-');
+                $('.teacher_filter_name ul').append('<li class="teacher_select" value="'+ item[1]+'">'+item[0] +'</li>');
+            });
+        }
+		e.preventDefault();
+		if (e.keyCode == 13) {
+			var element_id  = $(".search-query-button").attr('element_id');
+			$(".load_more_"+element_id).attr("offset",0);
+	    $(".loader").css('top','25%');
+	    getSearchCourses(element_id, is_mobile = 0);
+		}
+	});
+	
+	$(document).on('click','.teacher_select',function (e) {
+        $('.teacher_filter_name').addClass('hidden');
+        $('#search-teacher-query').val($(this).text());
+        var element_id  = $(".search-query-button").attr('element_id');
+        var teacher_uid = $("#teacher_uid_"+element_id).val($(this).val());
+        $(".load_more_"+element_id).attr("offset",0);
+        $(".loader").css('top','25%');
+        getSearchCourses(element_id, is_mobile = 0);
+
+    });
+	$(document).on('click', '.search-query-button', function(e){
+		var element_id  = $(this).attr('element_id');
+		$(".load_more_"+element_id).attr("offset",0);
+    $(".loader").css('top','25%');
+    getSearchCourses(element_id, is_mobile = 0);
+		
+	});
+	$(document).on('click', '.time-selector .time-selector_text', function(e){
+		$(this).parent().find(".time-selct-contanier").addClass('active');
+	});
+	
+	$('input[type=radio][name=time-selector-input]').change(function() {
+		var value = $("input[name='time-selector-input']:checked").val();
+		var counter = $("input[name='time-selector-input']:checked").attr("counter");
+		var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id')
+		$(".filter_date_time_lang_"+element_id+" .container").removeClass("active");
+		$(".filter_date_time_lang_"+element_id+" .container_"+counter).addClass("active");
+		$('.filter_date_time_lang_'+element_id+' .time-selector .time-selector_text .time-value').attr('value',value);
+		getSearchCourses(element_id, is_mobile = 0);
+	});
+	
+	$('input[type=radio][name=time-selector-radio]').change(function() {
+		var value = $("input[name='time-selector-radio']:checked").val();
+		var counter = $("input[name='time-selector-radio']:checked").attr("counter");
+		var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id')
+		$(".filter_date_time_lang_"+element_id+" .container").removeClass("active");
+		$(".filter_date_time_lang_"+element_id+" .container_"+counter).addClass("active");
+		$('.filter_date_time_lang_'+element_id+' .time-selector .time-selector_text .time-value').attr('value',value);
+		getSearchCourses(element_id, is_mobile = 0);
+	});
+	
+	$(document).on('click', '.time-selector .time-selct-contanier .time_value', function(e){
+		var element_id = $(this).closest('.search_courses_filter_date_lang').attr('element_id')
+		$(".time-selct-contanier").removeClass('active');
+		$(this).parents('.time-slect').find('li').removeClass('active');
+		$(this).parent().addClass('active');
+		e.preventDefault();
+    var time_data = $(this).text();
+    var value = $(this).attr('value');
+    if(value == 'all'){
+    	time_data = 'All';
+    	value = 'select';
+    }
+    $('.filter_date_time_lang_'+element_id+' .time-selector .time-selector_text .time-value').text(time_data);
+    $('.filter_date_time_lang_'+element_id+' .time-selector .time-selector_text .time-value').attr('value',value);
+    getSearchCourses(element_id, is_mobile = 0);
+	});
+
+	$(document).bind('click', function(e){
+    var $target = $(e.target);
+    if(!$target.closest('.time-selector_text').length && !($target.parent().hasClass('time-selector'))){
+      $(".time-selct-contanier").removeClass('active');
+    }
+    if(!$target.closest('.language-selct_text').length && !($target.parent().hasClass('lang-container'))){
+      $(".language-selct-contanier").removeClass('active');
+    }
+    if(!$target.closest('.language-selct_text').length && !($target.parent().hasClass('lang-container-mobile'))){
+      $(".language-selct-contanier-mobile").removeClass('active');
+    }
+    if(!$target.closest('.language-selct_text').length && !($target.parent().hasClass('radio-lang-container'))){
+      $(".language-selct-contanier-radio").removeClass('active');
+    }
+    if(!$target.closest('.profession-selct_text').length && !($target.parent().hasClass('profession-container'))){
+      $(".profession-selct-contanier").removeClass('active');
+    }
+    if(!$target.closest('.ctype-selct_text').length && !($target.parent().hasClass('ctype-container'))){
+      $(".ctype-selct-contanier").removeClass('active');
+    }
+	});
+});

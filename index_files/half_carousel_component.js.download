@@ -1,0 +1,16 @@
+(function($){
+  Drupal.behaviors.half_carousel = {}
+  Drupal.behaviors.half_carousel.attach = function(context) {
+    if (jQuery().cycle) {
+      if ($('.half-carousel').length > 0) {
+        $('.half-carousel', context).cycle({
+          fx:     'fade',
+          speed:  'fast',
+          timeout: 0,
+        });
+      }
+    }
+  }
+  
+  
+})( jQuery );
