@@ -1,0 +1,19 @@
+(function ($) {
+    $(document).ready(function () {
+        $(document).on("change", function () {
+            // setTimeout(function () {
+            var link_value = $("#edit-field-wfc-layout-und").val();
+            if (link_value !== "undefined") {
+                if (link_value === "small") {
+                    $(".field-name-field-wfc-icon-description").css("display","none");
+                    $(".field-name-field-wfc-icon-links").css("display","block");
+                } else {
+                    $(".field-name-field-wfc-icon-description").css("display","block");
+                    $(".field-name-field-wfc-icon-links").css("display","none");
+                }
+            }
+            // }, 500);
+
+        });
+    });
+})(jQuery);

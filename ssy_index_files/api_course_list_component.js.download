@@ -1,0 +1,1407 @@
+(function($){
+	var search_flag = false;
+  Drupal.behaviors.lp_course_list = {}
+  Drupal.behaviors.lp_course_list.owlSlider = function(context) {
+    console.log("slider");
+    $(".course-slider").each(function() {
+     
+      if($(this).attr('item_count') > 1){
+        $(this).owlCarousel({
+          loop:true,
+          autoplay: false,
+          dots:false,
+          nav:$(this).attr('item_count') > 2 || document.documentElement.clientWidth < 768 && $(this).attr('item_count') >=2,
+          navText: ["", ""],
+          responsiveClass:true,
+          autoplaySpeed : 800,
+          touchDrag: true,
+          callbacks:true,
+          onTranslated:slider_callback,
+          onInitialized:slider_callback,
+          responsive:{
+            0:{
+              items:1,
+              loop:false,
+            },
+            768:{
+              items: $(this).attr('item_count') == 2 ? 2 : 3,
+              loop:false,
+            },
+            1025:{
+              items:$(this).attr('item_count') == 2 ? 2 : 3,
+              loop:false,
+            }
+          }
+        }).on('changed.owl.carousel', function (event) {
+        var carousel = event.relatedTarget;
+        current = carousel.current();
+        element = event.target;
+        if(jQuery(window).width() > 767){
+          jQuery('.owl-next', element).toggleClass('hidden', current === carousel.maximum() - 1);
+          jQuery('.owl-prev', element).toggleClass('hidden', current === carousel.minimum());
+        }else if(jQuery(window).width() < 767){
+          jQuery('.owl-next', element).toggleClass('hidden', current === carousel.maximum());
+          jQuery('.owl-prev', element).toggleClass('hidden', current === carousel.minimum());
+        }
+      });
+      }
+    });
+  }
+  function bg_slider_slide(){
+    $('.bg-slider').owlCarousel({
+      loop:true,
+      autoplay: false,
+      dots:false,
+      nav:true,
+      navText: ["", ""],
+      responsiveClass:true,
+      autoplaySpeed : 800,
+      touchDrag: true,
+      responsive:{
+        0:{
+          items:1,
+        },
+        768:{
+          items:2,
+        },
+        1025:{
+          items:2,
+          loop:true,
+        }
+      }
+    });
+  }
+  
+  Drupal.behaviors.lp_course_list.attach = function(context) {
+    
+    
+    if($('.bg-slider').length > 0 && $('.bg-slider').attr('item_count') > 1){
+      bg_slider_slide();
+    }
+    if ($('.lp-course-list').hasClass("load-ajax")) {
+      Drupal.lp_course_list.get_ajax_courses();
+    } 
+    else {
+      Drupal.lp_course_list.resize();
+    }
+    
+    Drupal.behaviors.lp_course_list.owlSlider(context);
+    
+    $('.show-hide-map a', context).off('click').click(function(e) {
+      $(this).parent().parent().find('.lp-course-list').toggle();
+      $(this).parent().parent().find('.geofieldMap').toggle();
+      $(this).toggleText(Drupal.t("Hide Map"), Drupal.t("Show Map"));
+      return false;
+    });
+    
+    $('.course-list-component').find('input[name="center_autocomplete_google"]').keypress(function(event) {
+    	if (event.which == 13) {
+        event.preventDefault();
+        Drupal.lp_course_list.get_ajax_courses();
+       }
+    });
+    
+	  $(document).on( "click", ".calendar_wrapper .calendar_next", function (e){
+	  	e.preventDefault();
+	  	search_flag = false;
+	    Drupal.lp_course_list.course_layout = 'calendar';
+	    if($('.calendar_wrapper').data('month') == 11){
+	      $('.calendar_wrapper').data('month', 0);
+	      currYear = $('.calendar_wrapper').data('year') + 1;
+	      $('.calendar_wrapper').data('year', currYear); 
+	    }else{
+	      currMonth = $('.calendar_wrapper').data('month') + 1;
+	      $('.calendar_wrapper').data('month', currMonth); 
+	    }
+	    Drupal.lp_course_list.get_ajax_courses();
+	  });
+
+	  $(document).on( "click", ".calendar_wrapper .calendar_prev", function (e){ 
+	  	e.preventDefault();
+	  	search_flag = false;
+	    Drupal.lp_course_list.course_layout = 'calendar';
+	    if($('.calendar_wrapper').data('month') == 0 ){
+	      $('.calendar_wrapper').data('month', 11);
+	      currYear = $('.calendar_wrapper').data('year') - 1;
+	      $('.calendar_wrapper').data('year', currYear); 
+	    }else{
+	      currMonth = $('.calendar_wrapper').data('month') - 1;
+	      $('.calendar_wrapper').data('month', currMonth);
+	    }
+	    Drupal.lp_course_list.get_ajax_courses();
+	  });
+
+    $(document).on( "click", ".search-course-list_tok_centers", function (e){
+      $('.search_loader').show();
+      Drupal.lp_course_list.get_ajax_courses();
+   })
+	  
+	  $(document).on( "mouseenter", ".calendar_view_main .calendar_course_show ul li", function (e){ 
+	  	e.preventDefault();
+    	$('.calendar_view_main .calendar_course_show ul li').removeClass('active');
+    	$('.tooltip_form').hide();
+    	$('.tooltip_arrow').hide();
+    	$(this).addClass('active');
+    	$(this).find('.tooltip_arrow').show();
+    	$(this).find('.tooltip_form').show();
+    	if(!$(this).find('.tooltip_details').length){
+	  		var course_main_height = $('.calendar_course_show_inner .course_main').height();
+		  	$(this).find('.tooltip_form').css('height', course_main_height);
+		  	$(this).find('.tooltip_form').css('min-height', course_main_height);
+    	}else{
+    		if($(this).find('.tooltip_details').height() > 130){
+    			var course_main_height = $('.calendar_course_show_inner .course_main').height();
+          $(this).find('.tooltip_form').css('cssText', 'right:392px !important;display:block;min-height:'+course_main_height+'px;height:'+course_main_height+'px;');
+    		}
+    	}
+    });
+	  
+	  $(document).on( "mouseleave", ".calendar_view_main .calendar_course_show ul li", function (e){ 
+	  	e.preventDefault();
+    	$('.tooltip_form').hide();
+    	$('.tooltip_arrow').hide();
+    	$('.calendar_view_main .calendar_course_show ul li').removeClass('active');
+    });
+	  
+	  $(document).on( "click", ".calendar_view_main .calendar_course_show ul li .tooltip_form .close", function (e){ 
+	  	e.preventDefault();
+    	$('.tooltip_form').hide();
+    	$('.tooltip_arrow').hide();
+    	$('.calendar_view_main .calendar_course_show ul li').removeClass('active');
+    });
+
+	  $(document).on( "click", "td.normal a", function (e){
+	  	e.preventDefault();
+	  	$('td.normal').removeClass('active');
+	  	$(this).parent().addClass('active');
+	  	$('td.normal a').removeClass('active');
+	  	$(this).addClass('active');
+	  	get_course_date = $(this).data('get-date');
+	  	get_courses = '';
+	  	if(typeof Drupal.lp_course_list.course_dates[get_course_date] !== 'undefined')
+	  		get_courses = Drupal.lp_course_list.course_dates[get_course_date];
+	  	calendar_details = {
+	  		'get_courses' : get_courses,
+	  		'course_date' : get_course_date,
+	  		'course_month' : $('.calendar_wrapper').data('month'),
+	  	};
+	  	
+      var viewHelpers = {
+         checkForDayNames : function(recur_display){
+           return geoHelper.checkDayNames(recur_display);
+         }
+      }
+      _.extend(calendar_details, viewHelpers);
+      
+      var viewHelpers2 = {
+         checkDateDays : function(start, start_date, end , requestFor, type) {
+           return geoHelper.getCourseDateDays(start, start_date, end , requestFor, type);
+         }
+      }
+      _.extend(calendar_details, viewHelpers2);
+      
+      var viewHelpers3 = {
+         getMonthNames : function(format_date, recur_event) {
+           return geoHelper.getMonthName(format_date, recur_event);
+         }
+      }
+      _.extend(calendar_details, viewHelpers3);
+        
+      var viewHelpers4 = {
+         getCourseDay : function(start_date, end_date) {
+           return geoHelper.getCourseDay(start_date, end_date);
+         }
+      }
+      _.extend(calendar_details, viewHelpers4);
+      
+      var viewHelpers5 = {
+         checkManyDay : function(start_date, end_date) {
+           return geoHelper.checkManyDay(start_date, end_date);
+         }
+      }
+      _.extend(calendar_details, viewHelpers5);
+		  
+		  html = _.template(calendar_courses, calendar_details);
+	  	$('.calendar_course_show_inner').html(html);
+	  	var li_width = $('.calendar_view_main .calendar_course_show ul li').width() + 15;
+	  	$('.calendar_view_main .calendar_course_show ul li .tooltip_form').css('right', li_width);
+	  	var course_main_height = $('.calendar_course_show_inner .course_main').height();
+	  	$('.calendar_view_main .calendar_course_show ul li .tooltip_form').css('min-height', course_main_height);
+		  
+		  if($(window).width() <= 767 && $(this).hasClass('calendar_popup')){
+			  /*if (!$('.nyroModalCont').length > 0){*/
+	        var url = $(this).attr("href");
+	        var calendar_popup = false;
+	        var calendar_course_popup = false;
+	        if($(this).hasClass('calendar_popup'))
+	          calendar_popup = true;
+	          
+	        $.nmManual(url,{
+	          stack: true,
+	          callbacks: {
+	           size:function(nm){
+               nm.sizes.w = Math.min($(window).width() * 0.95, 400);
+               //nm.sizes.h = nm.sizes.h + 20;
+	             if(calendar_popup == true)
+	               $('.nyroModalCont').parent().addClass('calendar_popup_wrapper');
+	             $('.nyroModalCont').parent().parent().addClass('calendar_popup_main');
+	           },
+	         },
+	
+	        });
+	    	/*} */
+			}
+	  });
+	  
+	  $(document).on( "click", ".calendar_course_popup", function (e){
+	  	if($(window).width() <= 767){
+	  		var calendar_first_pop = $(".calendar_popup_main .nyroModalCont").height();
+	  		$(".calendar_popup_main .nyroModalCont").css("min-height",calendar_first_pop);
+       	$(".calendar_popup_main .nyroModalCont").height(calendar_first_pop);
+	  	}
+	  });
+
+    
+  }
+  
+  Drupal.lp_course_list = {
+    course_version: 'none',
+    course_layout:'',
+  };
+  
+
+  
+  function minimal_overlay_slider(){
+  	if($('.minimal_overlay_slider').length){
+	    $('.minimal_overlay_slider').owlCarousel({
+	      loop:true,
+	      autoplay: false,
+	      dots:false,
+	      nav:true,
+	      navText: ["", ""],
+	      responsiveClass:true,
+	      autoplaySpeed : 800,
+	      touchDrag: true,
+	      responsive:{
+	        0:{
+	          items:1,
+	        }
+	      }
+	  	});
+		}
+  }
+ 
+  function slider_callback(){
+    if($(window).width() > 767){
+      $(".div_CourseListComponent").each(function() {
+        if($(this).find('.course-slider').length){
+          var move_border_count = 1;
+          var move_item_count = $(this).find('.course-slider').attr('item_count');
+          $(this).find('.owl-item .bg_slider').css('border-right', '');
+          if(move_item_count > 3){
+            $(this).find('.owl-item.active').each(function() {
+              if(move_border_count == 3){
+                $(this).find('.bg_slider').css('border-right', '0');
+                return false;
+              }
+              move_border_count++;
+            });
+          }else{
+            if(move_item_count == 1){
+              $(this).find('.owl-item .bg_slider').css('border-right', '0');
+            }else if(move_item_count == 2){              
+              $(this).find('.owl-item.active').each(function() {
+                if(move_border_count == move_item_count){
+                  $(this).find('.bg_slider').css('border-right', '0');
+                  return false;
+                }
+                move_border_count++;
+              });
+            }else if(move_item_count == 3){
+              $(this).find('.owl-item.active').each(function() {
+                if(move_border_count == 3){
+                  $(this).find('.bg_slider').css('border-right', '0');
+                  return false;
+                }
+                move_border_count++;
+              });
+            }
+          }
+        }
+      });      
+    }
+  }
+  
+  Drupal.lp_course_list.resize = function () {
+    console.log("resize");
+    var version ='full', template;   
+    if (document.documentElement.clientWidth < 768) {
+    	version = 'mobile';
+    }
+    /*if (document.documentElement.clientWidth < 768) {
+      version = 'mobile';
+      if('undefined' != typeof mobile_rows_template)
+        template = mobile_rows_template;
+    }
+    else {
+      if('undefined' != typeof plain_rows_template)
+        template = plain_rows_template;
+    }*/
+
+    if (version != Drupal.lp_course_list.course_version
+        && 'undefined' != typeof lp_courses) {
+      var html;
+      var lpe_id;
+      console.log(template_vars, lpe_id);
+      $('.lp-course-list').each(function() {
+        lpe_id = $(this).attr('data-lp-id');
+        lpe_id_layout = $(this).attr('data-lp-layout');
+        lpe_id_hide_venue = $(this).attr('data-lp-hide-venue');
+        show_title = $(this).attr('data-show-course-title');
+        hide_address_online = $(this).attr('data-hide-address-online');
+
+        if('undefined' != typeof hide_address_online && lp_courses[lpe_id] != undefined){
+          lp_courses[lpe_id]['hide_address_online'] = hide_address_online;  
+        }
+        
+        if (document.documentElement.clientWidth < 768) {
+    	  version = 'mobile';
+    	  if('undefined' != typeof template_vars['mobile_rows_template_' + lpe_id])
+    	    template = template_vars['mobile_rows_template_' + lpe_id];
+    	}
+    	else {
+    	  if('undefined' != typeof template_vars['plain_rows_template_' + lpe_id])
+    	    template = template_vars['plain_rows_template_' + lpe_id];
+    	}
+        if('undefined' != typeof lp_courses[lpe_id] && ('undefined' != typeof lp_courses[lpe_id].rows || 'undefined' != typeof lp_courses[lpe_id].results) && 'undefined' != typeof template){
+        	lp_courses[lpe_id]['layout'] = lpe_id_layout;
+        	lp_courses[lpe_id]['show_title'] = show_title;
+        	
+        	lp_courses[lpe_id]['preselected_course_types'] = $("#preselected_course_types_"+lpe_id).val();
+        	
+		      var viewHelpers = {
+		         checkForDayNames : function(recur_display){
+		           return geoHelper.checkDayNames(recur_display);
+		         }
+		      }
+		      _.extend(lp_courses[lpe_id], viewHelpers);
+		      
+		      var viewHelpers2 = {
+		         checkDateDays : function(start, start_date, end , requestFor, type) {
+		           return geoHelper.getCourseDateDays(start, start_date, end , requestFor, type);
+		         }
+		      }
+		      _.extend(lp_courses[lpe_id], viewHelpers2);
+		      
+		      var viewHelpers3 = {
+		         getMonthNames : function(format_date, recur_event) {
+		           return geoHelper.getMonthName(format_date, recur_event);
+		         }
+		      }
+		      _.extend(lp_courses[lpe_id], viewHelpers3);
+        
+		      var viewHelpers4 = {
+		         getCourseDay : function(start_date, end_date) {
+		           return geoHelper.getCourseDay(start_date, end_date);
+		         }
+		      }
+		      _.extend(lp_courses[lpe_id], viewHelpers4);
+		      
+		      var viewHelpers5 = {
+		         checkManyDay : function(start_date, end_date) {
+		           return geoHelper.checkManyDay(start_date, end_date);
+		         },
+		         getTitle :function(title) { 
+		           return title.replace(/\\/g, '');
+		         }
+		      }
+		      _.extend(lp_courses[lpe_id], viewHelpers5);
+		      console.log("rendering courses");
+          html = _.template(template, lp_courses[lpe_id]);
+          $('#lp-course-list-'+lpe_id).html(html);
+          $(window).ajaxComplete(minimal_overlay_slider());
+          
+          if($('.calendar_view_main .calendar_course_show ul li').length > 0){
+	        	var li_width = $('.calendar_view_main .calendar_course_show ul li').width() + 15;
+	  				$('.calendar_view_main .calendar_course_show ul li .tooltip_form').css('right', li_width);
+				  	var course_main_height = $('.calendar_course_show_inner .course_main').height();
+				  	$('.calendar_view_main .calendar_course_show ul li .tooltip_form').css('min-height', course_main_height);
+	  			}
+        }
+        //This is just extra parameter for search tok with center
+        if(lpe_id_layout == "search_tok_gk"){
+            Drupal.lp_course_list.search_tok_gk = "search_tok_gk";
+            lp_courses[lpe_id]['lpe_id_hide_venue'] = lpe_id_hide_venue;
+            if($("#lp-course-list-"+lpe_id).html() == ""){
+              $("#lp-course-list-"+lpe_id).parent().find(".search_tok_gk-subtitle").hide();
+            }
+        }
+      });
+    }
+    
+    $(".div_CourseListComponent").each(function() {
+    	if($(this).find('.sahaj-upcoming-section').length && $(this).parents('.row-inner-wrapper').hasClass('picturefill-background')){
+    		$(this).find('.sahaj-upcoming-section').addClass('sahaj-no-bg');
+    	}
+      if(!$(this).find('.lp-course-list').length){
+        $(this).hide();   
+        if($(this).parents('.div_PageRow').length && $(this).parents('.element-CourseListComponent').length == 0) {
+          $(this).parents('.div_PageRow').hide();
+          var menu_id = $(this).parents('.row-inner-wrapper').attr('id');
+          if(typeof menu_id != 'undefined'){
+            $("#Menu a").each(function(){         
+              if($(this).attr("href") == "#"+menu_id){
+                $(this).parent().addClass("menu-hide");
+              }
+            });
+          }
+        }
+      }else{
+        if($(this).find('.sahaj-upcoming-mid .upcoming-sahaj-col').length == 1){
+          $(this).find('.sahaj-upcoming-mid .upcoming-sahaj-col').addClass('upcoming-sahaj-single-col');
+        }
+        if($(this).find('.course-slider').length){
+          var item_count = $(this).find('.course-slider').attr('item_count');
+          if($(window).width() < 768){
+            if(item_count > 1){
+              $(this).find('.owl-controls').show();
+            }else{
+              $(this).find('.owl-controls').hide();
+            }
+          }else{
+            if(item_count > 3){
+              $(this).find('.owl-controls').show();
+            }else{
+              $(this).find('.owl-controls').hide();
+            }
+          }   
+        }else if($(this).find('.bg-slider').length){
+          var item_count = $(this).find('.bg-slider').attr('item_count');
+          if($(window).width() < 768){
+            if(item_count > 1){
+              $(this).find('.owl-controls').show();
+            }else{
+              $(this).find('.owl-controls').hide();
+            }
+          }else{
+            if(item_count > 2){
+              $(this).find('.owl-controls').show();
+            }else{
+              if(item_count == 1){
+              }else if(item_count == 2){
+              }
+              $(this).find('.owl-controls').hide();
+            }
+          }        
+        }else if($(this).find('.three_horizontal_courses_owl').length){
+          var item_count = $(this).find('.three_horizontal_courses_owl').attr('item_count');
+          if($(window).width() < 768){
+            if(item_count > 1){
+              $(this).find('.owl-controls').show();
+            }else{
+              $(this).find('.owl-controls').hide();
+            }
+          }else{
+            if(item_count > 2){
+              $(this).find('.owl-controls').show();
+            }else{
+              if(item_count == 1){
+              }else if(item_count == 2){
+              }
+              $(this).find('.three_horizontal_courses_owl').find('.owl-stage').addClass('three_course-owl-item-center-align');
+              $(this).find('.owl-controls').hide();
+            }
+          }        
+        }else if($(this).find('.white-square-with-wrapper').length){
+          var item_count = $(this).find('.white-square-with-wrapper').attr('item_count');
+          if($(window).width() < 768){
+            if(item_count > 1){
+              $(this).find('.owl-controls').show();
+            }else{
+              $(this).find('.white-square-with-wrapper').find('.owl-stage').addClass('white_square-owl-item-center-align');
+              $(this).find('.owl-controls').hide();
+            }
+          }else{
+            if(item_count == 1){
+              $(this).find('.white-square-with-wrapper').find('.owl-stage').addClass('white_square-owl-item-center-align');
+              $(this).find('.owl-controls').hide();
+            }else if(item_count >= 2){
+              $(this).find('.owl-controls').show();
+            }
+          }        
+        }
+        if($(this).find('.three_horizontal_courses').length){
+            setTimeout(function(){
+                if($(this).find('.three_horizontal_courses').html() == ""){
+                    if(user_is_logged_in == false){
+                        $(this).parent().parent().parent().parent().hide();
+                    }
+                }
+                 },1000);
+       }
+
+       if($(this).find('.three_horizontal_courses').length){
+           setTimeout(function(){
+               if($(this).find('.three_horizontal_courses_owl').find(".item").length == 0){
+                   if(user_is_logged_in == false){
+                       $(this).parent().parent().parent().hide();
+                   }
+               }},1000);
+       }
+
+       if($(this).find('.white-square-with-opacity').length){
+           if($(this).find('.white-square-with-opacity').html() == ""){
+             if(user_is_logged_in == false){
+              $(this).parent().parent().parent().hide();
+             }
+           }
+       }
+
+       if($(this).find('.white-square-with-opacity').length){
+           if($(this).find('.white-square-with-opacity').find(".owl-item").length == 0){
+             if(user_is_logged_in == false){
+               $(this).parent().parent().parent().hide();
+             }
+           }
+       }
+        if($(this).find('.carousel-inner').hasClass('no-slider') && $(this).find('.carousel-inner').attr('item_count') <= 2){
+          var no_slider_slide = $(this).find('.carousel-inner');
+          if (document.documentElement.clientWidth < 768) {
+            no_slider_slide.trigger('destroy.owl.carousel').removeClass('owl-carousel owl-loaded');
+            no_slider_slide.find('.owl-stage-outer').children().unwrap();
+            if(no_slider_slide.parents('.row-inner-wrapper').length)
+              no_slider_slide.parents('.row-inner-wrapper').addClass('no-bg-mob');
+          }else{
+            if(no_slider_slide.length > 0 && no_slider_slide.attr('item_count') > 1){
+              bg_slider_slide();
+            }
+          }
+        }
+      }
+    });
+    
+    Drupal.behaviors.lp_course_list.owlSlider();
+  }
+  
+  Drupal.header_component.resize_functions.push(Drupal.lp_course_list.resize);
+
+  Drupal.lp_course_list.refreshForm = function ($form, checkboxesChanged, pagination) {
+    var self = $form.find('.lp-course-list');
+    var lp_id = $(self).attr('data-lp-id'),
+    path = "course-search/ajax",
+    map = $(self).hasClass("map") ;
+
+    if (Drupal.settings.pathPrefix) {
+      path = "/" + Drupal.settings.pathPrefix +path;
+    }else {
+      path = "/" +path;
+    }
+    var preselected_course_types = $("#preselected_course_types_"+lp_id).val();
+    var sort_by_distance  = $("#sort_by_distance_"+lp_id).val();
+    var center_autocomplete_google_limit = $("#center_autocomplete_google_limit_"+lp_id).val();
+    var params = {
+        'limit':center_autocomplete_google_limit, 
+        'use_my_ip': 1, 
+        'extend_to_limit' : 1, 
+        'no_center': 1,
+        'preselected_course_types':preselected_course_types, 
+        'center_autocomplete_google_country': Drupal.settings.aol.country, 
+        'center_id' : Drupal.settings.center, 'no_center': 1};
+    
+    var api_params = {
+        'type': "userlocation",
+        'ctype': preselected_course_types,
+        'extend_to_limit' : 1,
+        'language':Drupal.settings.aol.full_language,
+        //'country':Drupal.settings.aol.country,
+        'limit':center_autocomplete_google_limit, 
+    };
+    if(Drupal.settings.aol.country != 'global')
+    	api_params.country = Drupal.settings.aol.country;
+    if(sort_by_distance == 1)
+    	api_params.order_by = 'distance';
+    
+    //var url = "#distance="+distance+"&sSearch="+search+"&st=&lat="+lat+"&lng="+lng+"&ctype="+ctype+"&acol="+acol+"&c=&cc=&d1=&d2=";
+    var ceFlag ={course:false,centers:false};
+     var combinedData={};
+
+    if ($form.find('[name=center_autocomplete_google_lat]').val()) {
+      if ($form.find('[name=center_autocomplete_google_layout]').val() != 3) {
+        api_params.use_my_ip = 0;
+        //api_params.type = "search";
+      }
+      api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+      api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+      api_params.center_autocomplete_google = 'hello';
+//      params.center_autocomplete_google_obj =  $form.find('[name=center_autocomplete_google_obj]').val();
+
+      var auto_complete = $form.find('[name=center_autocomplete_google_obj]').val();
+      if (auto_complete !=""){   
+  			obj_auto_complete = $.parseJSON(auto_complete);
+      	if(Drupal.settings.aol.use_mapbox_autocomplete == 0){
+		      if(obj_auto_complete.address_components[0].types[0] == "country"){
+		        cshort = obj_auto_complete.address_components[obj_auto_complete.address_components.length-1].short_name.toLowerCase();
+				    if(cshort !== Drupal.settings.aol.country){
+			      	delete api_params.country;
+			      	api_params.type = "search";
+			      	api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+	      			api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+			      }
+		      }else if(obj_auto_complete.address_components[obj_auto_complete.address_components.length-1].types[0] == 'country'){
+		      	cshort = obj_auto_complete.address_components[obj_auto_complete.address_components.length-1].short_name.toLowerCase();
+			      if(cshort !== Drupal.settings.aol.country){
+			      	delete api_params.country;
+			      	api_params.type = "search";
+			      	api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+	      			api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+			      }
+			    }
+	      }else{
+	      	if (obj_auto_complete.feature.place_type[0] == "country") {
+	      		cshort = obj_auto_complete.feature.properties.short_code;
+	      		if(cshort !== Drupal.settings.aol.country){
+			      	delete api_params.country;
+			      	api_params.type = "search";
+			      	api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+	      			api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+			      }
+	      	}else{
+	      		cshort = obj_auto_complete.object.country;
+	      		if(cshort !== Drupal.settings.aol.country){
+			      	delete api_params.country;
+			      	api_params.type = "search";
+			      	api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+	      			api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+			      }
+	      	}
+	      }
+			}
+    }
+    
+    if ($form.find('[name=course_date_start]').val()) {
+      api_params.course_date_start = $form.find('[name=course_date_start]').val();
+      api_params.course_date_end = $form.find('[name=course_date_end]').val();
+    }else if(course_layout != 'calendar_view'){ 
+    	if(typeof Drupal.settings.aol.dont_show_courses_afr_starts !== 'undefined' && Drupal.settings.aol.dont_show_courses_afr_starts == 0){
+		  	var now = new Date();
+		  	api_params.start_date_from = now.toISOString().substring(0, 10);//$.format.date(now, "yyyy-MM-dd");
+		  	api_params.start_date_to = $.format.date(new Date(now.getFullYear()+5,now.getMonth(),now.getDay()), "yyyy-MM-dd");
+		}
+    }
+    
+    
+    return ;
+    $.post(
+      path,
+      params,
+      function(response, status){
+        //geoHelper.getFormParamsFromUrl(response.url.replace('acol', 'noacol'));
+        if (typeof response == 'string') {
+          response = $.parseJSON(response);
+        }
+        
+        if ('undefined' != typeof response.data && 'undefined' != typeof response.data.rows) {
+          //lp_course_list  = response.data;
+          if (map) {
+            mapID = 'geosearch-map';
+            if (typeof Drupal.settings.geofieldMap == 'undefined') {
+              Drupal.settings.geofieldMap = {};
+            }
+            if (typeof Drupal.settings.geofieldMap[mapID] == 'undefined') {
+              Drupal.settings.geofieldMap[mapID] = new Object();
+              Drupal.settings.geofieldMap[mapID].data = new Object();
+            }
+            
+            //format data for map
+            for (var i2 = 0; i2 < response.data.rows.length; i2++) {
+              if ('undefined' == typeof response.data.rows[i2].properties) {
+                response.data.rows[i2].properties = new Object();
+              }
+              response.data.rows[i2].properties.description = _.template(map_popup_template, response.data.rows[i2]);
+    
+            }
+            Drupal.settings.geofieldMap[mapID].data.geometries = response.data.rows;
+            $('#' + mapID).addClass('geofieldMap').removeClass('geofield-processed-processed');;
+            Drupal.attachBehaviors();
+            
+          }
+          lp_courses[lp_id] = response.data;
+          Drupal.lp_course_list.resize ();
+        }                
+      });
+  }
+  
+  Drupal.lp_course_list.refresh_single_course_list = function ($form) {
+    //Drupal.lp_course_list.refreshForm($(this).closest('form'));
+     // $form = $(this).closest('form');
+          var self = $form.find('.lp-course-list');
+          course_layout = $(self).attr('data-lp-layout');
+          lp_id = $(self).attr('data-lp-id'),
+          path = "course-search/ajax",
+          map = $(self).hasClass("map") ;
+          search_flag = false;
+          if (Drupal.settings.pathPrefix) {
+            path = "/" + Drupal.settings.pathPrefix +path;
+          }else {
+            path = "/" +path;
+          }
+          var preselected_course_types = $("#preselected_course_types_"+lp_id).val();
+          var order_by_date = $("#order_by_date_"+lp_id).val();
+          var sort_by_distance  = $("#sort_by_distance_"+lp_id).val();
+          var center_autocomplete_google_limit = $("#center_autocomplete_google_limit_"+lp_id).val();
+          var is_minimum_distance =  $('#is_minimum_distance').val();
+          
+          if(parseInt(is_minimum_distance) == 1 && !_.isEmpty(minimum_distance)){
+            var minimum_distance =  $('#minimum_distance').val();
+            var distance = minimum_distance;
+            var extend_to_limit = 0;
+          }else{
+            var distance = 3;
+            var extend_to_limit = 1;
+          }
+
+          if(course_layout == "search_tok_courses"){
+            var distance = $("#edit-center-autocomplete-distance").val();
+          }
+
+          var params = {
+              'limit':center_autocomplete_google_limit, 
+              'use_my_ip': 1, 
+              'extend_to_limit' : extend_to_limit, 
+              'no_center': 1,
+              'preselected_course_types':preselected_course_types, 
+              'center_autocomplete_google_country': Drupal.settings.aol.country, 
+              'center_id' : Drupal.settings.center, 'no_center': 1};
+          
+          api_params = {
+              'type': "userlocation",
+        'language':Drupal.settings.aol.full_language,
+              'ctype': preselected_course_types,
+              'extend_to_limit' : extend_to_limit,
+              //'country':Drupal.settings.aol.country,
+              'limit':center_autocomplete_google_limit, 
+              'distance': distance
+          };
+          
+          if(order_by_date == 0){
+          	api_params.group_by_distance = 1
+          }
+          if(sort_by_distance == 1)
+          	api_params.order_by = 'distance';
+          
+          if(course_layout == "search_tok_courses"){
+            // api_params.type = 'search';
+            api_params.limit = 10;
+          }
+
+          if(Drupal.settings.aol.country != 'global')
+            api_params.country = Drupal.settings.aol.country;
+                  
+          //var url = "#distance="+distance+"&sSearch="+search+"&st=&lat="+lat+"&lng="+lng+"&ctype="+ctype+"&acol="+acol+"&c=&cc=&d1=&d2=";
+          var ceFlag ={course:false,centers:false};
+           var combinedData={};
+      
+          if ($form.find('[name=center_autocomplete_google_lat]').val()) {
+            if ($form.find('[name=center_autocomplete_google_layout]').val() != 3) {
+              api_params.use_my_ip = 0;
+              //api_params.type = "search";
+              api_params.type = "search";
+              api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+              api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+            }
+            api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+            api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+            api_params.center_autocomplete_google = 'hello';
+            //params.center_autocomplete_google_obj =  $form.find('[name=center_autocomplete_google_obj]').val();
+            
+            var auto_complete = $form.find('[name=center_autocomplete_google_obj]').val();
+            if (auto_complete !=""){   
+        			obj_auto_complete = $.parseJSON(auto_complete);
+            	if(Drupal.settings.aol.use_mapbox_autocomplete == 0){
+      		      if(obj_auto_complete.address_components[0].types[0] == "country"){
+      		        cshort = obj_auto_complete.address_components[obj_auto_complete.address_components.length-1].short_name.toLowerCase();
+      				    if(cshort !== Drupal.settings.aol.country){
+      			      	delete api_params.country;
+      			      	api_params.type = "search";
+      			      	api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+      	      			api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+      			      }
+      		      }else if(obj_auto_complete.address_components[obj_auto_complete.address_components.length-1].types[0] == 'country'){
+      		      	cshort = obj_auto_complete.address_components[obj_auto_complete.address_components.length-1].short_name.toLowerCase();
+      			      if(cshort !== Drupal.settings.aol.country){
+      			      	delete api_params.country;
+      			      	api_params.type = "search";
+      			      	api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+      	      			api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+      			      }
+      			    }
+      	      }else{
+      	      	if (obj_auto_complete.feature.place_type[0] == "country") {
+      	      		cshort = obj_auto_complete.feature.properties.short_code;
+      	      		if(cshort !== Drupal.settings.aol.country){
+      			      	delete api_params.country;
+      			      	api_params.type = "search";
+      			      	api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+      	      			api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+      			      }
+      	      	}else{
+      	      		cshort = obj_auto_complete.object.country;
+      	      		if(cshort !== Drupal.settings.aol.country){
+      			      	delete api_params.country;
+      			      	api_params.type = "search";
+      			      	api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+      	      			api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+      			      }
+      	      	}
+      	      }
+      			}
+          }
+          
+          if ($form.find('[name=course_date_start]').val()) {
+            api_params.course_date_start = $form.find('[name=course_date_start]').val();
+            api_params.course_date_end = $form.find('[name=course_date_end]').val();
+          }else if(course_layout != 'calendar_view'){  
+          	if(typeof Drupal.settings.aol.dont_show_courses_afr_starts !== 'undefined' && Drupal.settings.aol.dont_show_courses_afr_starts == 0){
+              var now = new Date();
+              api_params.start_date_from = now.toISOString().substring(0, 10);//$.format.date(now, "yyyy-MM-dd");
+              api_params.start_date_to = $.format.date(new Date(now.getFullYear()+5,now.getMonth(),now.getDay()), "yyyy-MM-dd");
+            }
+	        }
+          
+          if(course_layout == 'calendar_view'){
+        if($('.calendar_wrapper').length && Drupal.lp_course_list.course_layout == 'calendar'){
+          var get_year = $('.calendar_wrapper').data('year');
+          var get_month = $('.calendar_wrapper').data('month');
+              var lastDay = new Date(get_year, get_month, 0);
+              first_day = get_year+'-'+(get_month+1)+'-01';
+              last_day = get_year+'-'+(get_month+1)+'-'+lastDay[2];
+            }else{
+              var current_date = new Date();
+              var lastDay = new Date(current_date.getFullYear(), current_date.getMonth() + 1, 0);
+              var get_month = current_date.getMonth()+1;
+              if(get_month < 10)
+                get_month = '0'+get_month;
+              lastDay = lastDay.toString().split(' ');
+              today_date = current_date.getDate();
+              if(today_date < 10)
+                today_date = '0'+today_date;
+              first_day = current_date.getFullYear()+'-'+(get_month)+'-'+today_date;
+              last_day = current_date.getFullYear()+'-'+(get_month)+'-'+lastDay[2];
+            }
+            api_params.fields = 'notes';
+            api_params.course_date_start = first_day;
+            api_params.course_date_end = last_day;
+          }
+      api_params.lp_id = lp_id;
+      var show_tok_courses = $("#show_tok_courses_"+lp_id).val();
+      if(show_tok_courses == 1){
+        api_params.center_type = "local_2";        
+      }
+      aol.course.search(api_params, Drupal.lp_course_list.formatCourse);
+  }
+	  
+  Drupal.lp_course_list.setCourseData = function(data){
+    Drupal.lp_course_list.renderData(data);
+  }
+	    
+  Drupal.lp_course_list.formatCourse = function(data){
+  	if(data.api_params !== 'undefined')
+  		api_params = data.api_params;
+  	if(api_params.lp_id !== 'undefined')
+  		var f_lp_id = api_params.lp_id;
+	  	if(map){
+	    	mapID = 'geosearch-map';
+	      if (typeof Drupal.settings.geofieldMap == 'undefined') {
+	        Drupal.settings.geofieldMap = {};
+	      }
+	      if (typeof Drupal.settings.geofieldMap[mapID] == 'undefined') {
+	        Drupal.settings.geofieldMap[mapID].is_course_list = new Object();
+	        Drupal.settings.geofieldMap[mapID].lat = new Object();
+	        Drupal.settings.geofieldMap[mapID].lng = new Object();
+	        Drupal.settings.geofieldMap[mapID].type = new Object();
+	      }
+	      Drupal.settings.geofieldMap[mapID].is_course_list = true;
+	      Drupal.settings.geofieldMap[mapID].lat = api_params.lat;
+	      Drupal.settings.geofieldMap[mapID].lng = api_params.lng;
+	      Drupal.settings.geofieldMap[mapID].type = api_params.type;
+	    }
+
+      if(data.courses.length == 0 && course_layout == 'slider_white_bg' && search_flag == true){
+        //Temp hack
+        search_flag = false;
+      }
+      search_flag = false;
+      if((data.courses.length <= 0 && search_flag == false) || (data.courses.length <= 0 && Drupal.lp_course_list.course_layout == 'calendar'  && search_flag == false)){
+        search_flag = true;
+        api_params.type = 'country';
+
+        var is_minimum_distance =  $('#is_minimum_distance').val();
+        if(parseInt(is_minimum_distance) == 1){
+          api_params.type = 'userlocation';
+          var minimum_distance =  $('#minimum_distance').val();
+          //api_params.lat =  $('#is_minimum_distance_lat').val();
+          //api_params.lng =  $('#is_minimum_distance_lng').val();
+          api_params.distance =  parseInt(minimum_distance);
+          api_params.extend_to_limit = 0;
+        }
+
+
+if(Drupal.lp_course_list.course_layout == 'calendar' && typeof api_params.course_date_start != 'undefined' && typeof api_params.course_date_end != 'undefined'){
+	        month_val = $('.calendar_wrapper').data('month') + 1;
+				  if(month_val < 10)
+				  	month_val = '0'+month_val;
+					var lastDay = new Date($('.calendar_wrapper').data('year'), month_val, 0);
+					lastDay = lastDay.toString().split(' ');
+					
+					var current_date = new Date();
+				  if($('.calendar_wrapper').data('year') == current_date.getFullYear() && $('.calendar_wrapper').data('month') == current_date.getMonth()){
+						today_date = current_date.getDate();
+						if(today_date < 10)
+							today_date = '0'+today_date;
+				  }else{
+				  	today_date = '01';
+				  }
+					
+					first_day = $('.calendar_wrapper').data('year')+'-'+month_val+'-'+today_date;
+					last_day = $('.calendar_wrapper').data('year')+'-'+month_val+'-'+lastDay[2];
+					
+		      api_params.course_date_start = first_day;
+		      api_params.course_date_end = last_day;
+       	}
+				api_params.lp_id = f_lp_id;
+        var show_tok_courses = $("#show_tok_courses_"+lp_id).val();
+        if(show_tok_courses == 1){
+          api_params.center_type = "local_2";     
+        }
+        aol.course.search(api_params, Drupal.lp_course_list.formatCourse);
+        return;
+      }
+      var tt={rows:data.courses};
+      var res={};
+      res= {data:tt,type:"courses",api_params : data.api_params};
+      
+      all_course_dates = [];
+      $.each( data.courses, function( index, get_course ){
+        var course_dates = [];
+        date_start = new Date(get_course.start_date);
+        date_start = date_start.getDate();
+        if(typeof get_course.notes !== 'undefined' && get_course.notes !== '')
+          get_course.notes = get_course.notes.replace(/\\(.)/mg,'');
+        if(typeof all_course_dates[date_start] === 'undefined'){
+          all_course_dates[date_start] = [];
+          all_course_dates[date_start][0] = get_course;
+        }else{
+          date_length = all_course_dates[date_start].length;
+          all_course_dates[date_start][date_length] = get_course;
+        }
+      });
+      
+      Drupal.lp_course_list.course_dates = all_course_dates;
+      Drupal.lp_course_list.setCourseData(res);
+    }
+	    
+  	Drupal.lp_course_list.renderData = function (response){
+  	  console.log("render data", response);
+      if (typeof response == 'string') {
+        response = $.parseJSON(response);
+      }
+      var r_lp_id = response.api_params.lp_id;
+      if(Drupal.lp_course_list.multi_column == true){
+     		render_count = Drupal.lp_course_list.render_count;
+     		column_nids_head = Drupal.lp_course_list.column_nids_head;
+     		column_nids_count = Drupal.lp_course_list.column_nids_count;
+        
+        if ('undefined' != typeof response.data && 'undefined' != typeof response.data.rows) {
+        	Drupal.lp_course_list.get_results[response.queue-1] = {'heading':column_nids_head[response.queue-1], 'courses':response.data.rows};
+        }else{
+          Drupal.lp_course_list.get_results[response.queue-1] = {'heading':column_nids_head[response.queue-1], 'courses':''};
+        }
+        if((column_nids_count-1) == render_count){
+        	lp_courses[r_lp_id].results = Drupal.lp_course_list.get_results;
+          Drupal.lp_course_list.resize ();
+        }else{
+          render_count++;
+        }
+      }else{
+        if ('undefined' != typeof response.data && 'undefined' != typeof response.data.rows) {
+          if (map) {
+            mapID = 'geosearch-map';
+            if (typeof Drupal.settings.geofieldMap == 'undefined') {
+              Drupal.settings.geofieldMap = {};
+            }
+            if (typeof Drupal.settings.geofieldMap[mapID] == 'undefined') {
+              Drupal.settings.geofieldMap[mapID] = new Object();
+              Drupal.settings.geofieldMap[mapID].data = new Object();
+            }
+            
+            //format data for map
+            for (var i2 = 0; i2 < response.data.rows.length; i2++) {
+              if ('undefined' == typeof response.data.rows[i2].properties) {
+                response.data.rows[i2].properties = new Object();
+              }
+              response.data.rows[i2].properties.description = _.template(map_popup_template, response.data.rows[i2]);
+    
+            }
+            Drupal.settings.geofieldMap[mapID].data.geometries = response.data.rows;
+            $('#' + mapID).addClass('geofieldMap').removeClass('geofield-processed-processed');;
+            Drupal.attachBehaviors();
+            
+          }
+          
+          if(course_layout == 'calendar_view'){
+            if($('.calendar_wrapper').length && Drupal.lp_course_list.course_layout == 'calendar'){
+              get_year = $('.calendar_wrapper').data('year');
+              get_month = $('.calendar_wrapper').data('month');
+              lastDay = new Date(get_year, get_month, 0);
+              first_day = get_year+'-'+(get_month+1)+'-01';
+              last_day = get_year+'-'+(get_month+1)+'-'+lastDay[2];
+            }else{
+              current_date = new Date();
+              get_year = current_date.getFullYear();
+              get_month = current_date.getMonth();
+              lastDay = new Date(get_year, get_month + 1, 0);
+              lastDay = lastDay.toString().split(' ');
+              first_day = get_year+'-'+(get_month+1)+'-01';
+              last_day = get_year+'-'+(get_month+1)+'-'+lastDay[2];
+            }
+          }
+          lp_courses[r_lp_id] = response.data;
+          Drupal.lp_course_list.resize ();
+        }
+      }
+      if($('.calendar_view-section .search_loader').length)
+        $('.calendar_view-section .search_loader').hide();
+      $('.search_loader').hide();
+    }
+  Drupal.lp_course_list.multi_column = false;
+  Drupal.lp_course_list.get_ajax_courses = function (){
+    var lp_id;
+    var path;
+   // var multi_column;
+    var column_nids_count;
+	  var render_count;
+	  var column_nids_head;
+	  var api_params;
+	  aol = new AOL();
+	  
+	  if($('.calendar_view-section .search_loader').length)
+			$('.calendar_view-section .search_loader').show();
+		
+	  if(Drupal.lp_course_list.course_layout == 'calendar'){
+	    lp_id = $('.calendar_view-section .lp-course-list').data('lp-id');
+	    var sort_by_distance  = $("#sort_by_distance_"+lp_id).val();
+			$form = $('.calendar_view-section').closest('form');
+	    var preselected_course_types = $("#preselected_course_types_"+lp_id).val();
+	    var center_autocomplete_google_limit = $("#center_autocomplete_google_limit_"+lp_id).val();
+	    
+	    api_params = {
+	        'type': "userlocation",
+  				'language':Drupal.settings.aol.full_language,
+	        'ctype': preselected_course_types,
+	        'extend_to_limit' : 1,
+	        'limit':center_autocomplete_google_limit, 
+	    };
+	    if(sort_by_distance == 1)
+      	api_params.order_by = 'distance';
+	    
+	    if(Drupal.settings.aol.country != 'global')
+	    	api_params.country = Drupal.settings.aol.country;
+					    
+	    var ceFlag ={course:false,centers:false};
+	    var combinedData={};
+		    
+		  month_val = $('.calendar_wrapper').data('month') + 1;
+		  if(month_val < 10)
+		  	month_val = '0'+month_val;
+			var lastDay = new Date($('.calendar_wrapper').data('year'), month_val, 0);
+			lastDay = lastDay.toString().split(' ');
+			
+			var current_date = new Date();
+		  if($('.calendar_wrapper').data('year') == current_date.getFullYear() && $('.calendar_wrapper').data('month') == current_date.getMonth()){
+				today_date = current_date.getDate();
+				if(today_date < 10)
+					today_date = '0'+today_date;
+		  }else{
+		  	today_date = '01';
+		  }
+			
+			first_day = $('.calendar_wrapper').data('year')+'-'+month_val+'-'+today_date;
+			last_day = $('.calendar_wrapper').data('year')+'-'+month_val+'-'+lastDay[2];
+			
+			api_params.fields = 'notes';
+      api_params.course_date_start = first_day;
+      api_params.course_date_end = last_day;
+      if(typeof Drupal.settings.aol.dont_show_courses_afr_starts !== 'undefined' && Drupal.settings.aol.dont_show_courses_afr_starts == 0){
+          var now = new Date();
+          api_params.start_date_from = now.toISOString().substring(0, 10);//$.format.date(now, "yyyy-MM-dd");
+          api_params.start_date_to = $.format.date(new Date(now.getFullYear()+5,now.getMonth(),now.getDay()), "yyyy-MM-dd");
+      }
+      if ($form.find('[name=center_autocomplete_google_lat]').val()) {
+	      if ($form.find('[name=center_autocomplete_google_layout]').val() != 3) {
+	        api_params.use_my_ip = 0;
+	      }
+	      api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+	      api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+	      api_params.center_autocomplete_google = $form.find('[name=center_autocomplete_google]').val();
+	      
+	      var auto_complete = $form.find('[name=center_autocomplete_google_obj]').val();
+	      if (auto_complete !=""){   
+	  			obj_auto_complete = $.parseJSON(auto_complete);
+	      	if(Drupal.settings.aol.use_mapbox_autocomplete == 0){
+			      if(obj_auto_complete.address_components[0].types[0] == "country"){
+			        cshort = obj_auto_complete.address_components[obj_auto_complete.address_components.length-1].short_name.toLowerCase();
+					    if(cshort !== Drupal.settings.aol.country){
+				      	delete api_params.country;
+				      	api_params.type = "search";
+				      	api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+		      			api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+				      }
+			      }else if(obj_auto_complete.address_components[obj_auto_complete.address_components.length-1].types[0] == 'country'){
+			      	cshort = obj_auto_complete.address_components[obj_auto_complete.address_components.length-1].short_name.toLowerCase();
+				      if(cshort !== Drupal.settings.aol.country){
+				      	delete api_params.country;
+				      	api_params.type = "search";
+				      	api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+		      			api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+				      }
+				    }
+		      }else{
+		      	if (obj_auto_complete.feature.place_type[0] == "country") {
+		      		cshort = obj_auto_complete.feature.properties.short_code;
+		      		if(cshort !== Drupal.settings.aol.country){
+				      	delete api_params.country;
+				      	api_params.type = "search";
+				      	api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+		      			api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+				      }
+		      	}else{
+		      		cshort = obj_auto_complete.object.country;
+		      		if(cshort !== Drupal.settings.aol.country){
+				      	delete api_params.country;
+				      	api_params.type = "search";
+				      	api_params.lat =  $form.find('[name=center_autocomplete_google_lat]').val();
+		      			api_params.lng =  $form.find('[name=center_autocomplete_google_lng]').val();
+				      }
+		      	}
+		      }
+				}
+	    }
+
+      var show_tok_courses = $("#show_tok_courses_"+lp_id).val();
+      if(show_tok_courses == 1){
+        api_params.center_type = local_2;       
+      }
+
+      api_params.lp_id = lp_id;
+      var show_tok_courses = $("#show_tok_courses_"+lp_id).val();
+      if(show_tok_courses == 1){
+        api_params.center_type = "local_2";         
+      }
+      aol.course.search(api_params, Drupal.lp_course_list.formatCourse);
+	  }else{
+	    $('.lp-course-list').each(function() {
+		    Drupal.lp_course_list.multi_column = false;
+		    search_flag = false;
+		    column_nids_count = 0;
+			  render_count = 0;
+			  course_layout = $(this).data('lp-layout');
+	      if ($(this).hasClass("load-ajax") > 0){
+	        $(this).once(function() {
+	          var column_nids = $(this).data('column-nids');
+	          column_nids_count = parseInt($(this).data('column-count'));
+	          if(column_nids_count > 6)
+	          	column_nids_count = 6;
+	          Drupal.lp_course_list.column_nids_count = column_nids_count;
+	          if(column_nids !== null && column_nids !== '' && column_nids_count >= 1){
+	          	Drupal.lp_course_list.multi_column = true;
+	          	Drupal.lp_course_list.render_count = -1;
+	          	search_flag = [];   
+	          	var api_params = [];
+			  			var api_query_queue = [];  
+		          lp_id = $(this).attr('data-lp-id');
+		          path = "course-search/ajax";
+		        
+		          if (Drupal.settings.pathPrefix) {
+		            path = "/" + Drupal.settings.pathPrefix +path;
+		          }else {
+		            path = "/" +path;
+		          }
+		          api_params = {
+					        'type': "userlocation",
+	        				'language':Drupal.settings.aol.full_language,
+					    };
+					    if(Drupal.settings.aol.country != 'global')
+					    	api_params.country = Drupal.settings.aol.country;
+	    
+		          var column_nids_val = [];
+		          column_nids_head = [];
+		          var column_result = [];
+		          $.each(column_nids, function (index, data) {
+		          	column_nids_head.push(index);
+		        		column_nids_val.push(data);
+		    			});
+		    			Drupal.lp_course_list.column_nids_head = column_nids_head;
+		    			if(typeof Drupal.settings.aol.dont_show_courses_afr_starts !== 'undefined' && Drupal.settings.aol.dont_show_courses_afr_starts == 0){
+  		            var now = new Date();
+  		            api_params.start_date_from = now.toISOString().substring(0, 10);//$.format.date(now, "yyyy-MM-dd");
+  		            api_params.start_date_to = $.format.date(new Date(now.getFullYear()+5,now.getMonth(),now.getDay()), "yyyy-MM-dd");
+  		        }
+	          	if(typeof column_nids != 'undefined' && Object.keys(column_nids).length >= 1){
+	          		api_params.limit = parseInt($(this).data('limit'));
+	          		
+	          		if($('.home-page-course-search').length){
+	          			api_params.use_my_ip = 1;
+	          			api_params.extend_to_limit = 1;
+	          			api_params.no_center = 1;
+	          		}
+	          		var all_column_nids = [];
+	          		for(var i=0; i<column_nids_count; i++){
+							    all_column_nids.push(i);
+							  }
+	          		all_column_nids.forEach(function(i){
+			      			search_flag[i+1] = false;
+	          			api_params.lp_id = lp_id;
+	          			api_params = $.extend({}, api_params, {'ctype':column_nids_val[i],'queue':i+1});
+	          			api_query_queue[i] = api_params;
+	          		});
+			      	}
+			      	Drupal.lp_course_list.search_flag = search_flag;
+			      	Drupal.lp_course_list.refresh_multi_list(api_query_queue);
+	          }else{
+	        	  Drupal.lp_course_list.refresh_single_course_list($(this).closest('form'));
+      				if ($('input[name="center_autocomplete_google"]').length > 0)
+		          	var autocomplete = geoHelper.initializeMap('input[name="center_autocomplete_google"]',  Drupal.lp_course_list.refresh_single_course_list);
+		       	}
+	        });
+          if(course_layout == "search_tok_courses"){
+            Drupal.lp_course_list.refresh_single_course_list($(this).closest('form'));
+            if ($('input[name="center_autocomplete_google"]').length > 0)
+              var autocomplete = geoHelper.initializeMap('input[name="center_autocomplete_google"]',  Drupal.lp_course_list.refresh_single_course_list);
+          }      
+	      }
+	    });
+	 	}
+    
+  }
+	Drupal.lp_course_list.refresh_multi_list = function(api_query_queue){
+		map = false;
+		lp_id = api_query_queue[0].lp_id;
+		if(typeof Drupal.lp_course_list.get_results == 'undefined'){
+      Drupal.lp_course_list.get_results = [];
+    }
+		Drupal.lp_course_list.api_query_queue = api_query_queue;
+		$.each( api_query_queue, function( index, api_query ){
+			//delete api_query.lp_id;
+  		aol.course.search(api_query, Drupal.lp_course_list.formatMultiCourse);
+  	});
+	} 
+  Drupal.lp_course_list.formatMultiCourse = function(data){
+  	console.log("data",data);
+		search_flag = Drupal.lp_course_list.search_flag;
+    if((data.courses.length <= 0 && search_flag[data.queue] == false)){
+      search_flag[data.queue] = true;
+      api_query_queue = Drupal.lp_course_list.api_query_queue;
+      api_query_queue[data.queue-1].type = 'country';
+      aol.course.search(api_query_queue[data.queue-1], Drupal.lp_course_list.formatMultiCourse);
+      return;
+    }
+    if(data.api_params !== 'undefined')
+  		api_params = data.api_params;
+  	if(api_params.lp_id !== 'undefined')
+  		var m_lp_id = api_params.lp_id;
+    var tt={rows:data.courses};
+    var res={};
+    res= {data:tt,type:"courses",queue:data.queue, api_params :data.api_params};
+    lp_courses[m_lp_id] = res.data;
+		Drupal.lp_course_list.render_count++;
+    Drupal.lp_course_list.setCourseData(res);
+  }
+  
+  var AllRequestsCompleted = (function() {
+  	var numRequestToComplete, requestsCompleted, callBacks, singleCallBack;
+		
+		return function(options) {
+	    if (!options) options = {};
+	
+	    numRequestToComplete = options.numRequest || 0;
+	    requestsCompleted = options.requestsCompleted || 0;
+	    callBacks = [];
+	    var fireCallbacks = function() {
+	    	for (var i = 0; i < callBacks.length; i++) callBacks[i]();
+	    };
+	    if (options.singleCallback) callBacks.push(options.singleCallback);
+	
+	    this.addCallbackToQueue = function(isComplete, callback) {
+	      if (isComplete) requestsCompleted++;
+	      if (callback) callBacks.push(callback);
+	      if (requestsCompleted == numRequestToComplete) fireCallbacks();
+	    };
+	    this.requestComplete = function(isComplete) {
+	      if (isComplete) requestsCompleted++;
+	      if (requestsCompleted == numRequestToComplete) fireCallbacks();
+	    };
+	    this.setCallback = function(callback) {
+	    	callBacks.push(callBack);
+	    };
+		};
+	})();
+
+  
+  $(document).on( "mouseenter", ".upcoming-sahaj-col", function (e){
+       $(this).find(".three_horizontal_address").fadeIn({ duration: 'slow'})
+       $(this).find(".three_horizontal_city_states").hide();
+          
+   });
+ $(document).on( "mouseleave", ".upcoming-sahaj-col", function (e){
+      $(this).find(".three_horizontal_address").hide();
+      $(this).find(".three_horizontal_city_states").show();
+   });
+	 $(document).on( "click", ".show_columns_in_tabs .course_list_tabs .course_list_tabs_li", function (e){
+		 var tab_counter = $(this).attr('tab_counter');
+		 $(this).parent().find('.course_list_tabs_li').removeClass('active');
+		 $(this).addClass('active');
+	   $(this).parent().parent().parent().find('.sahaj-upcoming-mid').find('.sahaj-upcoming-columns').removeClass('active');
+	   $(this).parent().parent().parent().find('.sahaj-upcoming-mid').find('.upcoming-columns_tabs_'+tab_counter).addClass('active');
+	   $(this).parent().parent().parent().find('.bottom_link').find('.bottom_link_href').removeClass('active');
+	   $(this).parent().parent().parent().find('.bottom_link').find('.bottom_lnk_href_'+tab_counter).addClass('active');
+	});
+ //Changes for TOK course search start
+ $(function() {
+  
+    var val = $('#edit-center-autocomplete-distance').val();
+    var progressWidth = parseInt($('.search-slidebar').css('width'));
+    $('#slidebar-handle').css('left',  Math.sqrt(val)*1.5/100*progressWidth  + "px");
+    $('.miles-value').text($('#edit-center-autocomplete-distance').val());
+    function recalculateWidth() {
+      var progressWidth = parseInt($('.search-slidebar').css('width'));
+      var newProgress = ((parseInt($('#slidebar-handle').css('left'))) / progressWidth) * 100;
+      $('#slidebar-progress').progressbar({ value: newProgress });
+      $('#edit-center-autocomplete-distance').val(Math.round( newProgress/1.5 * newProgress/1.5 ));
+      $('.miles-value').text(Math.round($('#edit-center-autocomplete-distance').val() ));
+        
+    }
+    
+    function dragStop() {
+      Drupal.lp_course_list.get_ajax_courses();
+    }
+
+    var tok_course_layout = $('.lp-course-list').attr('data-lp-layout');
+   if(tok_course_layout == "search_tok_courses"){
+      // $('#slidebar-progress').progressbar({ value: $('#edit-center-autocomplete-distance').val() }); // default position
+      // $('#slidebar-handle').draggable({
+      //   containment: '#slidebar-container',
+      //   drag: recalculateWidth,
+      //   scroll: false,
+      //   stop: dragStop,
+      // });
+    }
+    $('.search-box').click(function(){
+      $(this).parent().next().show();
+      // $(this).hide();
+    });
+    $('.show-map-toggle').hide();
+  });
+ //Changes for TOK course search end
+})( jQuery );
+
+
