@@ -1,0 +1,138 @@
+jQuery(window).load(most_popular_slider);
+jQuery(window).ajaxComplete(most_popular_slider);
+jQuery(window).resize(most_popular_slider);
+
+(function(jQuery){
+  Drupal.behaviors.most_popular_articles = {}
+  Drupal.behaviors.most_popular_articles.attach = function(context) {
+    jQuery("[data-echo]", jQuery(context).find('.most_popular_article')).each(function() {
+      var elem = this;
+      if (elem.src !== (src = elem.getAttribute('data-echo'))) {
+        elem.src = src;
+        jQuery(elem).parent().find('.lazyloader-icon').remove();
+      }
+    });
+    most_popular_slider();
+  }
+})( jQuery );
+
+function most_popular_slider(){
+  if (document.documentElement.clientWidth < 768) {      
+    if (jQuery('.most_popular_article ').length > 0){
+      jQuery('.most_popular_article').each(function(){
+        var loop_val = false;
+        if(jQuery(this).children().length > 1){
+          loop_val = true;
+        }
+        jQuery(this).owlCarousel({
+          loop: loop_val,
+          autoplay: loop_val,
+          dots: loop_val,
+          nav: false,
+          navText: ["",""],
+          touchDrag: loop_val,
+          dotsEach: loop_val,
+          autoplayHoverPause: loop_val,
+          responsive: {
+            0: {
+              items: 1,
+            },
+            768: {
+              items: 2,
+            },
+            1025: {
+              items: 3,
+            }
+          }
+        });
+      });
+    }
+  }else{   
+    jQuery('.most_popular_article').each(function(){
+      var most_popular_slide = jQuery(this);
+      most_popular_slide.trigger('destroy.owl.carousel').removeClass('owl-carousel owl-loaded');
+      most_popular_slide.find('.owl-stage-outer').children().unwrap();
+    });
+    ajax_tab_layout();
+  }
+}
+function ajax_tab_layout(){
+  jQuery('.tabs li:first-child').addClass('selected');
+  jQuery('.tabcontents .views:first-child').show();
+  jQuery('.tabs li').click(function(e){
+    e.preventDefault();
+    var get_attr = jQuery(this).find('a').attr('href');
+    jQuery('.tabcontents .views').hide();
+    jQuery('.tabs li').removeClass('selected');
+    jQuery(this).addClass('selected');
+    jQuery('.tabcontents').find(get_attr).show();  
+     jQuery("[data-echo]", jQuery('.tabcontents').find(get_attr)).each(function() {
+      var elem = this;
+      if (elem.src !== (src = elem.getAttribute('data-echo'))) {
+        elem.src = src;
+        jQuery(elem).parent().find('.lazyloader-icon').remove();
+      }
+    });
+  });
+}
+jQuery(document).on('click', '.most_popular_article_body a.read_more', function (e) {
+    e.preventDefault();
+    jQuery(this).siblings('.read_hide').css('display', 'inline');
+    jQuery(this).siblings('.read_hide').children('.read_less').css('display', 'inline');
+    jQuery(this).hide();
+    jQuery(this).siblings('.read_cont').hide();
+}); 
+jQuery(document).on('click', '.most_popular_article_body a.read_less', function (e) {
+    e.preventDefault();
+    jQuery(this).parent('.read_hide').hide();
+    jQuery(this).hide();
+    jQuery(this).parent('.read_hide').siblings('.read_more').css('display', 'inline');
+    jQuery(this).parent('.read_hide').siblings('.read_cont').css('display', 'inline');
+});
+
+
+function most_popular_solr(element_id){
+       var color_theme = tid_color_theme;
+       var query = jQuery.parseJSON(jQuery('#most_pop_query_'+element_id).val());
+       var parentdiv = jQuery('#most_pop_query_div'+element_id).val(); 
+
+      jQuery.ajax({
+        url: Drupal.settings.aol.content_api,
+        jsonp: "callback",
+        dataType: "jsonp",
+        data: query,      
+        success: function(response) {
+          jQuery('#view2 .most_popular_article').html("");
+          if(response.rows.length){
+            for (var i in response.rows) {
+              var parent_tid = 0;
+              response.rows[i].img_width = 370;
+              response.rows[i].img_height = 235;
+
+              jQuery.each(response.rows[i].im_taxonomy_vocabulary_4, function( value, index ) { 
+                if(color_theme != null && typeof color_theme[index] != 'undefined'){
+                  response.rows[i].parent_id = index;
+                  response.rows[i].parent_name = response.rows[i].tags[index];
+                  response.rows[i].parent_path = color_theme[index][4];
+                  response.rows[i].color_theme = color_theme[index][3];
+                }else if(parent_new_tids != null && jQuery.inArray(index, parent_new_tids) != '-1'){
+                  response.rows[i].parent_id = index;
+                  response.rows[i].parent_name = response.rows[i].tags[index];
+                response.rows[i].parent_path = Drupal.settings.basePath + Drupal.settings.pathPrefix + 'latest/'+index;
+                if (typeof color_theme !== 'undefined' && typeof color_theme['default'] !== 'undefined')
+                  if(color_theme['default'][3] !== '')
+                    response.rows[i].color_theme = color_theme['default'][3];
+              }
+
+            });
+              var item = _.template(most_popular_api, response.rows[i]);
+              jQuery('#view'+parentdiv+' .most_popular_article').append(item);
+            }
+          }
+        },
+        error: function(response) {
+          jQuery('.search_loader').hide();
+          jQuery("#blog_promoted_load_more_"+element_id).hide();
+        }
+    });   
+ }
