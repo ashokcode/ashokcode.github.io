@@ -351,7 +351,7 @@ em {
 }
 
 /*** updated customized ***/
-.flex-container ,.flex-container  .cont_left{
+.flex-container ,.flex-container  .cont_left,.flex-container   .cont_right{
   display: flex;
   flex-direction: column;
   margin-left: 8%;
