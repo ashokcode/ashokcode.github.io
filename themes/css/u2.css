@@ -418,6 +418,7 @@ em {
 }
 .flex-container  .cont_right{
 	margin-top:25px;
+	padding-left: 10px;
 }
 .flex-container  p.icon {
     font-size: 12px;
