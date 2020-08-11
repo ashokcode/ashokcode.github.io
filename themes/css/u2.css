@@ -357,7 +357,7 @@ em {
   margin-left: 8%;
 }
 }
-.container_row{
+.container-row,#admin-element-540189 .container-row{
   display: flex ! important;
   flex-direction: row ! important;
 }
