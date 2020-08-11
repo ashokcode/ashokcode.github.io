@@ -354,6 +354,8 @@ em {
 .flex-container ,.flex-container  .cont_left{
   display: flex;
   flex-direction: column;
+  margin-left: 8%;
+}
 }
 .flex-container .field-item.odd{
   display: flex;
@@ -362,7 +364,7 @@ em {
 
 .flex-container .text_big_bold{
 	width: 100%;
-	margin-left:30%;
+	margin-left:8%;
 }
 
 .flex-container .text_big_bold .heading_black {
