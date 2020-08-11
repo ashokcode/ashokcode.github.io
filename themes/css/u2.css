@@ -357,7 +357,7 @@ em {
   margin-left: 8%;
 }
 }
-.flex-container .field-item.odd{
+.flex-container .odd{
   display: flex;
   flex-direction: row;
 }
