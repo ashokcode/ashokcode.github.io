@@ -357,7 +357,7 @@ em {
   margin-left: 8%;
 }
 }
-.flex-container .odd, .flex-container .container_row{
+.container_row{
   display: flex;
   flex-direction: row;
 }
