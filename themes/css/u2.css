@@ -351,6 +351,10 @@ em {
 }
 .flex-container {
   display: flex;
+  flex-direction: column;
+}
+.flex-container .cont_left{
+  display: flex;
   flex-direction: row;
 }
 
