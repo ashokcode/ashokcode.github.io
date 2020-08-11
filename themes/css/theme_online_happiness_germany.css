@@ -1424,9 +1424,11 @@ strong {
   color: rgba(0,0,0,0.6);
   font-size: 20px;
 }
-.research_result_hp_page .row-sub-title-wrap .mobile_reaseach_below:focus {
+.research_result_hp_page .row-sub-title-wrap .mobile_reaseach_below:hover ,.research_result_hp_page .row-sub-title-wrap .mobile_reaseach_below:focus {
     color: orange;
     border: none;
+	cursor: pointer;
+	outline-color: whitesmoke;
 }
 @media (max-width: 767px) {
   .research_result_hp_page .row-sub-title-wrap .mobile_reaseach_below {
