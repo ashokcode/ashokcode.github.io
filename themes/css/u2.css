@@ -353,3 +353,18 @@ em {
   display: flex;
   flex-direction: row;
 }
+
+.flex-container .text_big_bold {
+    font-size: 30px !important;
+    margin: 0;
+    font-family: "work sans";
+    color: #000;
+    line-height: 1.1;
+    font-weight: 600;
+}
+.flex-container p.heading_orange {
+    font-size: 30px;
+    color: #f18f0e;
+    margin: 0;
+    font-weight: 300;
+}
