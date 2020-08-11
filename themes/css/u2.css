@@ -349,6 +349,8 @@ em {
  .place-holder.div_list.div_3{
 	with: 900px;
 }
+
+/*** updated customized ***/
 .flex-container ,.flex-container  .cont_left{
   display: flex;
   flex-direction: column;
@@ -377,3 +379,36 @@ em {
     margin: 0;
     font-weight: 300;
 }
+
+.flex-container p.small_text {
+	
+    font-size: 16px;
+    text-transform: uppercase;
+    font-weight: 500;
+    border-bottom: 2px solid #ffe4b3;
+    font-family: 'work sans';
+}
+.flex-container  p.inr_color {
+    font-size: 26px;
+    color: #f18f0e;
+    padding-top: 20px;
+}
+.flex-container  .online_hp_register{
+	background-color: #f18f0e;
+    border-radius: 5px;
+    font-family: "work sans";
+    font-weight: 600;
+    color: #fff;
+    padding: 10px 0px;
+    width: 250px;
+    display: block;
+    text-align: center;
+    font-size: 24px;
+    margin-top: 5% !important;
+}
+
+
+
+
+
+
