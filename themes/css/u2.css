@@ -349,3 +349,7 @@ em {
  .place-holder.div_list.div_3{
 	with: 900px;
 }
+.flex-container {
+  display: flex;
+  flex-direction: row;
+}
