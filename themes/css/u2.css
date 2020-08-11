@@ -349,11 +349,11 @@ em {
  .place-holder.div_list.div_3{
 	with: 900px;
 }
-.flex-container {
+.flex-container ,.flex-container  .cont_left{
   display: flex;
   flex-direction: column;
 }
-.flex-container .cont_left{
+.flex-container .field-item.odd{
   display: flex;
   flex-direction: row;
 }
