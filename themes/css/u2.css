@@ -363,7 +363,7 @@ em {
 }
 
 .flex-container .text_big_bold{
-	width: 100%;
+	width: 85%;
 	margin-left:8%;
 }
 
@@ -417,8 +417,8 @@ em {
     font-family: 'work sans';
 }
 .flex-container  .cont_right{
-	margin-top:25px;
-	padding-left: 10px;
+    padding-left: 10px;
+    width: 25%;
 }
 .flex-container  p.icon {
     font-size: 12px;
