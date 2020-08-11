@@ -351,13 +351,13 @@ em {
 }
 
 /*** updated customized ***/
-.flex-container ,.flex-container  .cont_left,.flex-container   .cont_right{
+.flex-container ,.flex-container  .cont_left,.flex-container   .cont_right, .container-row {
   display: flex;
   flex-direction: column;
   margin-left: 8%;
 }
 }
-.container-row,#admin-element-540189 .container-row{
+.container-row , #admin-element-540189 .container-row{
   display: flex ! important;
   flex-direction: row ! important;
 }
