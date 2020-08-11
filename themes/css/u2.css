@@ -354,11 +354,16 @@ em {
   flex-direction: row;
 }
 
-.flex-container .text_big_bold {
+.flex-container .text_big_bold{
+	width: 100%;
+	margin-left:30%;
+}
+
+.flex-container .text_big_bold .heading_black {
     font-size: 30px !important;
     margin: 0;
     font-family: "work sans";
-    color: #000;
+    color: rgba(0,0,0,0.6);
     line-height: 1.1;
     font-weight: 600;
 }
