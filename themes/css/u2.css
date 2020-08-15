@@ -361,10 +361,16 @@ em {
 	flex-direction: row;
 }
 @media (max-width: 767px) {
-  .field-item.odd.container-row {
-	display: flex;
-	flex-direction: colomn;
+	.field-item.odd.container-row {
+		display: flex;
+		flex-direction: colomn;
+	}
 }
+@media (min-width: 767px) {
+	.field-item.odd.container-row {
+		display: flex;
+		flex-direction: colomn;
+	}
 }
 .flex-container  .inr_color {
     font-size: 26px;
