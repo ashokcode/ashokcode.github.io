@@ -370,18 +370,6 @@ em {
 		width: 80%;
 	}
 }
-@media (min-width: 767px) {
-	.field-item.odd.container-row {
-		display: flex;
-		flex-direction: column ;
-	}
-}
-.flex-container  .inr_color {
-    font-size: 26px;
-    color: #f18f0e;
-    padding-top: 20px;
-}
-
 .flex-container .text_big_bold{
 	width: 85%;
 	margin-left:8%;
