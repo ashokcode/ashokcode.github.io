@@ -356,7 +356,10 @@ em {
   flex-direction: column;
   margin-left: 8%;
 }
-
+.field-item.odd.container-row {
+	display: flex;
+	flex-direction: row;
+}
 .flex-container  .inr_color {
     font-size: 26px;
     color: #f18f0e;
