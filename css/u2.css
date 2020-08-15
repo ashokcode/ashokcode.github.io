@@ -356,10 +356,9 @@ em {
   flex-direction: column;
   margin-left: 8%;
 }
-}
-.container-row , #admin-element-540189 .container-row{
-  display: flex ! important;
-  flex-direction: row ! important;
+.field-item.odd.container-row{
+		display: flex;
+		flex-direction: row;
 }
 
 .flex-container .text_big_bold{
