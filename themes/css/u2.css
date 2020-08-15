@@ -363,13 +363,17 @@ em {
 @media (max-width: 767px) {
 	.field-item.odd.container-row {
 		display: flex;
-		flex-direction: colomn;
+		flex-direction: column;
+	}
+	.flex-container  .cont_right{
+		padding-left: 15px;
+		width: 80%;
 	}
 }
 @media (min-width: 767px) {
 	.field-item.odd.container-row {
 		display: flex;
-		flex-direction: colomn;
+		flex-direction: column ;
 	}
 }
 .flex-container  .inr_color {
