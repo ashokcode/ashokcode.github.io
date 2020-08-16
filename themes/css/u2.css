@@ -367,7 +367,7 @@ em {
 	}
 	.flex-container  .cont_right{
 		padding-left: 15px;
-		width: 80%;
+		width: 80% !important;
 	}
 }
 .flex-container .text_big_bold{
